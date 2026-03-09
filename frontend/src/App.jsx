@@ -25,26 +25,26 @@ import {
 const AuthContext = createContext(null)
 
 const ROLE_LABELS = {
-  user: 'User',
-  dept_manager: 'Department Manager',
+  user: 'Utilizator',
+  dept_manager: 'Manager de departament',
   admin: 'Admin',
 }
 
 const roleLinks = {
   user: [
-    { to: '/dashboard', label: 'Dashboard', icon: Home },
-    { to: '/tickets/new', label: 'New Ticket', icon: PlusCircle },
-    { to: '/assistant', label: 'Assistant', icon: Bot },
+    { to: '/dashboard', label: 'Panou principal', icon: Home },
+    { to: '/tickets/new', label: 'Creează tichet nou', icon: PlusCircle },
+    { to: '/assistant', label: 'Asistent', icon: Bot },
   ],
   dept_manager: [
-    { to: '/dashboard', label: 'Dashboard', icon: Home },
-    { to: '/dept/dashboard', label: 'Dept', icon: Building2 },
-    { to: '/assistant', label: 'Assistant', icon: Bot },
+    { to: '/dashboard', label: 'Panou principal', icon: Home },
+    { to: '/dept/dashboard', label: 'Departament', icon: Building2 },
+    { to: '/assistant', label: 'Asistent', icon: Bot },
   ],
   admin: [
     { to: '/admin/dashboard', label: 'Admin', icon: Shield },
-    { to: '/admin/departments', label: 'Departments', icon: Building2 },
-    { to: '/admin/users', label: 'Users', icon: Users },
+    { to: '/admin/departments', label: 'Departamente', icon: Building2 },
+    { to: '/admin/users', label: 'Utilizatori', icon: Users },
   ],
 }
 
@@ -61,8 +61,19 @@ const routeAccess = {
   '/admin/users': ['admin'],
 }
 
-const CATEGORY_OPTIONS = ['IT Support', 'Network', 'Software', 'Hardware', 'Administrative']
-const PRIORITY_OPTIONS = ['low', 'medium', 'high', 'critical']
+const CATEGORY_OPTIONS = [
+  { value: 'IT Support', label: 'Suport IT' },
+  { value: 'Network', label: 'Rețea' },
+  { value: 'Software', label: 'Software' },
+  { value: 'Hardware', label: 'Hardware' },
+  { value: 'Administrative', label: 'Administrativ' },
+]
+const PRIORITY_OPTIONS = [
+  { value: 'low', label: 'scăzută' },
+  { value: 'medium', label: 'medie' },
+  { value: 'high', label: 'ridicată' },
+  { value: 'critical', label: 'critică' },
+]
 
 function createTicketMock(payload) {
   return new Promise((resolve) => {
@@ -175,8 +186,8 @@ function Brand({ mobile = false }) {
         <Bot size={mobile ? 18 : 20} />
       </div>
       <div>
-        <p className="text-sm font-semibold">Internal AI Helpdesk</p>
-        <p className="text-xs text-slate-500">Support shell</p>
+        <p className="text-sm font-semibold">Helpdesk intern AI</p>
+        <p className="text-xs text-slate-500">Interfață de suport</p>
       </div>
     </div>
   )
@@ -186,7 +197,7 @@ function RolePicker({ role, onRoleChange }) {
   return (
     <label className="block text-sm">
       <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">
-        Mock Role
+        Rol demonstrativ
       </span>
       <select
         value={role}
@@ -206,7 +217,7 @@ function RolePicker({ role, onRoleChange }) {
 function RoleBadge({ role }) {
   return (
     <span className="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-700">
-      Signed in as {ROLE_LABELS[role]}
+      {role === 'user' ? 'Autentificat ca utilizator' : `Autentificat ca ${ROLE_LABELS[role].toLowerCase()}`}
     </span>
   )
 }
@@ -249,12 +260,12 @@ function CardPage({ title, description, actions = [] }) {
       <div className="grid gap-4 sm:grid-cols-2">
         {[1, 2, 3, 4].map((item) => (
           <article key={item} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <h2 className="font-semibold">Card {item}</h2>
+            <h2 className="font-semibold">Cardul {item}</h2>
             <p className="mt-2 text-sm text-slate-600">
-              Mobile-friendly summary information appears here.
+              Aici apar informații sumare, optimizate pentru mobil.
             </p>
             <button className="mt-4 min-h-10 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white">
-              View details
+              Vezi detalii
             </button>
           </article>
         ))}
@@ -289,15 +300,15 @@ function LoginPage() {
             <LogIn size={20} />
           </div>
           <div>
-            <h1 className="text-lg font-semibold">Helpdesk Login</h1>
-            <p className="text-sm text-slate-500">Mock entry point (no backend)</p>
+            <h1 className="text-lg font-semibold">Autentificare Helpdesk</h1>
+            <p className="text-sm text-slate-500">Punct de intrare demonstrativ (fără backend)</p>
           </div>
         </div>
         <button
           onClick={() => navigate('/dashboard')}
           className="w-full rounded-lg bg-blue-600 px-4 py-3 text-sm font-semibold text-white"
         >
-          Continue to app shell
+          Continuă către aplicație
         </button>
       </div>
     </main>
@@ -309,8 +320,8 @@ function NewTicketPage() {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    category: CATEGORY_OPTIONS[0],
-    priority: PRIORITY_OPTIONS[1],
+    category: CATEGORY_OPTIONS[0].value,
+    priority: PRIORITY_OPTIONS[1].value,
   })
   const [errors, setErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -326,11 +337,11 @@ function NewTicketPage() {
     const nextErrors = {}
 
     if (!formData.title.trim()) {
-      nextErrors.title = 'Title is required.'
+      nextErrors.title = 'Titlul este obligatoriu.'
     }
 
     if (!formData.description.trim()) {
-      nextErrors.description = 'Description is required.'
+      nextErrors.description = 'Descrierea este obligatorie.'
     }
 
     return nextErrors
@@ -351,7 +362,7 @@ function NewTicketPage() {
     const result = await createTicketMock(formData)
 
     if (result.success) {
-      setSuccessMessage(`Ticket ${result.ticket_id} created successfully. Redirecting to dashboard...`)
+      setSuccessMessage(`Tichetul ${result.ticket_id} a fost creat cu succes. Redirecționare către panoul principal...`)
       setTimeout(() => {
         navigate('/dashboard')
       }, 1200)
@@ -364,16 +375,16 @@ function NewTicketPage() {
     <section className="mx-auto w-full max-w-2xl">
       <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
         <header className="mb-6 space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight">Create New Ticket</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Creează tichet nou</h1>
           <p className="text-sm text-slate-600">
-            Submit a request to the internal AI helpdesk team.
+            Trimite o solicitare către echipa internă de helpdesk AI.
           </p>
         </header>
 
         <form className="space-y-4" onSubmit={handleSubmit} noValidate>
           <div>
             <label htmlFor="title" className="mb-1 block text-sm font-medium text-slate-700">
-              Title
+              Titlu
             </label>
             <input
               id="title"
@@ -382,7 +393,7 @@ function NewTicketPage() {
               value={formData.title}
               onChange={handleChange}
               className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-blue-500 focus:ring"
-              placeholder="Brief summary of your issue"
+              placeholder="Rezumat scurt al problemei"
               aria-invalid={Boolean(errors.title)}
               aria-describedby={errors.title ? 'title-error' : undefined}
             />
@@ -395,7 +406,7 @@ function NewTicketPage() {
 
           <div>
             <label htmlFor="description" className="mb-1 block text-sm font-medium text-slate-700">
-              Description
+              Descriere
             </label>
             <textarea
               id="description"
@@ -404,7 +415,7 @@ function NewTicketPage() {
               value={formData.description}
               onChange={handleChange}
               className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-blue-500 focus:ring"
-              placeholder="Describe what happened, expected behavior, and urgency"
+              placeholder="Descrie ce s-a întâmplat, comportamentul așteptat și urgența"
               aria-invalid={Boolean(errors.description)}
               aria-describedby={errors.description ? 'description-error' : undefined}
             />
@@ -418,7 +429,7 @@ function NewTicketPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label htmlFor="category" className="mb-1 block text-sm font-medium text-slate-700">
-                Category
+                Categorie
               </label>
               <select
                 id="category"
@@ -428,8 +439,8 @@ function NewTicketPage() {
                 className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-blue-500 focus:ring"
               >
                 {CATEGORY_OPTIONS.map((category) => (
-                  <option key={category} value={category}>
-                    {category}
+                  <option key={category.value} value={category.value}>
+                    {category.label}
                   </option>
                 ))}
               </select>
@@ -437,7 +448,7 @@ function NewTicketPage() {
 
             <div>
               <label htmlFor="priority" className="mb-1 block text-sm font-medium text-slate-700">
-                Priority
+                Prioritate
               </label>
               <select
                 id="priority"
@@ -447,8 +458,8 @@ function NewTicketPage() {
                 className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-blue-500 focus:ring"
               >
                 {PRIORITY_OPTIONS.map((priority) => (
-                  <option key={priority} value={priority} className="capitalize">
-                    {priority}
+                  <option key={priority.value} value={priority.value}>
+                    {priority.label}
                   </option>
                 ))}
               </select>
@@ -469,10 +480,10 @@ function NewTicketPage() {
             {isSubmitting ? (
               <>
                 <Loader2 size={16} className="animate-spin" />
-                Submitting...
+                Se trimite...
               </>
             ) : (
-              'Submit Ticket'
+              'Trimite tichetul'
             )}
           </button>
         </form>
@@ -486,9 +497,9 @@ function TicketDetailPage() {
 
   return (
     <CardPage
-      title={`Ticket #${id}`}
-      description="Placeholder ticket detail with mobile cards for comments, timeline, and AI suggestions."
-      actions={[{ to: '/assistant', label: 'Ask Assistant', icon: Bot }]}
+      title={`Tichet #${id}`}
+      description="Detalii demonstrative tichet, cu carduri mobile pentru comentarii, cronologie și sugestii AI."
+      actions={[{ to: '/assistant', label: 'Întreabă asistentul', icon: Bot }]}
     />
   )
 }
@@ -509,11 +520,11 @@ function RoutesConfig() {
           path="/dashboard"
           element={
             <CardPage
-              title="Dashboard"
-              description="Overview of your open tickets, SLA status, and quick actions."
+              title="Panou principal"
+              description="Prezentare generală a tichetelor deschise, starea SLA și acțiuni rapide."
               actions={[
-                { to: '/tickets/new', label: 'Create Ticket', icon: PlusCircle },
-                { to: '/assistant', label: 'Open Assistant', icon: Bot },
+                { to: '/tickets/new', label: 'Creează tichet nou', icon: PlusCircle },
+                { to: '/assistant', label: 'Deschide asistentul', icon: Bot },
               ]}
             />
           }
@@ -524,8 +535,8 @@ function RoutesConfig() {
           path="/assistant"
           element={
             <CardPage
-              title="AI Assistant"
-              description="Chat workspace placeholder for internal triage and recommendations."
+              title="Asistent AI"
+              description="Spațiu demonstrativ de chat pentru triaj intern și recomandări."
             />
           }
         />
@@ -533,8 +544,8 @@ function RoutesConfig() {
           path="/dept/dashboard"
           element={
             <CardPage
-              title="Department Dashboard"
-              description="Manager-specific queue overview, team workload, and escalations."
+              title="Panou departament"
+              description="Prezentare generală a cozii departamentului, volumului echipei și escaladărilor."
             />
           }
         />
@@ -542,8 +553,8 @@ function RoutesConfig() {
           path="/admin/dashboard"
           element={
             <CardPage
-              title="Admin Dashboard"
-              description="System health, automation insights, and governance controls."
+              title="Panou administrare"
+              description="Starea sistemului, informații despre automatizare și controale de guvernanță."
             />
           }
         />
@@ -551,9 +562,9 @@ function RoutesConfig() {
           path="/admin/departments"
           element={
             <CardPage
-              title="Departments"
-              description="Manage department ownership, queues, and service boundaries."
-              actions={[{ to: '/admin/routing-rules', label: 'Routing Rules', icon: Workflow }]}
+              title="Departamente"
+              description="Gestionează responsabilitatea departamentelor, cozile și limitele serviciilor."
+              actions={[{ to: '/admin/routing-rules', label: 'Reguli de rutare', icon: Workflow }]}
             />
           }
         />
@@ -561,8 +572,8 @@ function RoutesConfig() {
           path="/admin/routing-rules"
           element={
             <CardPage
-              title="Routing Rules"
-              description="Configure smart ticket routing and escalation logic."
+              title="Reguli de rutare"
+              description="Configurează rutarea inteligentă a tichetelor și logica de escaladare."
             />
           }
         />
@@ -570,9 +581,9 @@ function RoutesConfig() {
           path="/admin/kb"
           element={
             <CardPage
-              title="Knowledge Base"
-              description="Curate internal AI help articles and response snippets."
-              actions={[{ to: '/assistant', label: 'Test in Assistant', icon: Bot }]}
+              title="Bază de cunoștințe"
+              description="Curatoriază articole interne de suport AI și șabloane de răspuns."
+              actions={[{ to: '/assistant', label: 'Testează în asistent', icon: Bot }]}
             />
           }
         />
@@ -580,8 +591,8 @@ function RoutesConfig() {
           path="/admin/users"
           element={
             <CardPage
-              title="Users & Access"
-              description="Manage role assignments and account lifecycle controls."
+              title="Utilizatori și acces"
+              description="Gestionează atribuirea rolurilor și controalele ciclului de viață al conturilor."
             />
           }
         />
