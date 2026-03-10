@@ -17,7 +17,7 @@ const statusMap = {
   closed: { label: 'închis', className: 'bg-slate-100 text-slate-600' },
 }
 
-export default function TicketCard({ ticket }) {
+export default function TicketCard({ ticket, showCreatedBy = false }) {
   const priority = priorityMap[ticket.priority] ?? priorityMap.low
   const status = statusMap[ticket.status] ?? statusMap.open
 
@@ -34,6 +34,10 @@ export default function TicketCard({ ticket }) {
       </div>
 
       <p className="mt-1 line-clamp-1 text-sm font-medium text-slate-900">{ticket.title}</p>
+
+      {showCreatedBy && ticket.created_by && (
+        <p className="mt-0.5 text-xs text-slate-400">de la: {ticket.created_by}</p>
+      )}
 
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${status.className}`}>
