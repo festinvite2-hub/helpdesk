@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState } from 'react'
+import { useState } from 'react'
 import {
   BrowserRouter,
   Link,
@@ -12,68 +12,20 @@ import {
 } from 'react-router-dom'
 import {
   Bot,
-  Building2,
-  Home,
   Loader2,
   LogIn,
   PlusCircle,
-  Shield,
-  Users,
   Workflow,
 } from 'lucide-react'
-
-const AuthContext = createContext(null)
-
-const ROLE_LABELS = {
-  user: 'Utilizator',
-  dept_manager: 'Manager de departament',
-  admin: 'Admin',
-}
-
-const roleLinks = {
-  user: [
-    { to: '/dashboard', label: 'Panou principal', icon: Home },
-    { to: '/tickets/new', label: 'Creează tichet nou', icon: PlusCircle },
-    { to: '/assistant', label: 'Asistent', icon: Bot },
-  ],
-  dept_manager: [
-    { to: '/dashboard', label: 'Panou principal', icon: Home },
-    { to: '/dept/dashboard', label: 'Departament', icon: Building2 },
-    { to: '/assistant', label: 'Asistent', icon: Bot },
-  ],
-  admin: [
-    { to: '/admin/dashboard', label: 'Admin', icon: Shield },
-    { to: '/admin/departments', label: 'Departamente', icon: Building2 },
-    { to: '/admin/users', label: 'Utilizatori', icon: Users },
-  ],
-}
-
-const routeAccess = {
-  '/dashboard': ['user', 'dept_manager', 'admin'],
-  '/tickets/new': ['user', 'dept_manager', 'admin'],
-  '/tickets/:id': ['user', 'dept_manager', 'admin'],
-  '/assistant': ['user', 'dept_manager', 'admin'],
-  '/dept/dashboard': ['dept_manager', 'admin'],
-  '/admin/dashboard': ['admin'],
-  '/admin/departments': ['admin'],
-  '/admin/routing-rules': ['admin'],
-  '/admin/kb': ['admin'],
-  '/admin/users': ['admin'],
-}
-
-const CATEGORY_OPTIONS = [
-  { value: 'IT Support', label: 'Suport IT' },
-  { value: 'Network', label: 'Rețea' },
-  { value: 'Software', label: 'Software' },
-  { value: 'Hardware', label: 'Hardware' },
-  { value: 'Administrative', label: 'Administrativ' },
-]
-const PRIORITY_OPTIONS = [
-  { value: 'low', label: 'scăzută' },
-  { value: 'medium', label: 'medie' },
-  { value: 'high', label: 'ridicată' },
-  { value: 'critical', label: 'critică' },
-]
+import {
+  AuthContext,
+  AuthProvider,
+  ROLE_LABELS,
+  RoleGuard,
+  roleLinks,
+  useAuth,
+} from './context/AuthContext'
+import { CATEGORY_OPTIONS, PRIORITY_OPTIONS } from './config/constants'
 
 function createTicketMock(payload) {
   return new Promise((resolve) => {
@@ -85,47 +37,6 @@ function createTicketMock(payload) {
       })
     }, 1000)
   })
-}
-
-function AuthProvider({ children }) {
-  const [role, setRole] = useState('user')
-
-  const value = useMemo(
-    () => ({
-      role,
-      setRole,
-      isAllowed(path) {
-        const key = Object.keys(routeAccess).find((entry) => {
-          if (!entry.includes(':')) return entry === path
-          const pattern = new RegExp(`^${entry.replace(':id', '[^/]+')}$`)
-          return pattern.test(path)
-        })
-
-        if (!key) return true
-        return routeAccess[key].includes(role)
-      },
-    }),
-    [role],
-  )
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
-}
-
-function useAuth() {
-  return useContext(AuthContext)
-}
-
-function RoleGuard({ children }) {
-  const { role, isAllowed } = useAuth()
-  const location = useLocation()
-
-  if (!isAllowed(location.pathname)) {
-    const fallback =
-      role === 'admin' ? '/admin/dashboard' : role === 'dept_manager' ? '/dept/dashboard' : '/dashboard'
-    return <Navigate to={fallback} replace />
-  }
-
-  return children
 }
 
 function AppLayout() {
