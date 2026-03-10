@@ -1,4 +1,5 @@
 export const CATEGORY_OPTIONS = [
+  { value: 'auto', label: '🔍 Autodetectare' },
   { value: 'IT Support', label: 'Suport IT' },
   { value: 'Network', label: 'Rețea' },
   { value: 'Software', label: 'Software' },
