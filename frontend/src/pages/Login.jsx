@@ -18,7 +18,7 @@ export default function Login() {
         </div>
         <button
           onClick={() => navigate('/dashboard')}
-          className="w-full rounded-lg bg-blue-600 px-4 py-3 text-sm font-semibold text-white"
+          className="min-h-[48px] w-full rounded-lg bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition-all active:scale-[0.98] active:bg-blue-700"
         >
           Continuă către aplicație
         </button>

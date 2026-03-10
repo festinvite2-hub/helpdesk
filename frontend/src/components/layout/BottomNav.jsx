@@ -51,7 +51,7 @@ export default function BottomNav() {
             <li key={`${label}-${to}`}>
               <Link
                 to={to}
-                className={`flex h-full flex-col items-center justify-center gap-0.5 px-1 ${
+                className={`flex h-full min-h-[48px] min-w-[48px] flex-col items-center justify-center gap-0.5 px-1 transition-opacity active:opacity-70 ${
                   isCenter
                     ? 'text-blue-600'
                     : isActive
@@ -61,7 +61,7 @@ export default function BottomNav() {
                 aria-current={isActive ? 'page' : undefined}
               >
                 {isCenter ? (
-                  <span className="-translate-y-1 rounded-full bg-blue-600 p-2 text-white shadow-md">
+                  <span className="-translate-y-1 rounded-full bg-blue-600 p-2 text-white shadow-md transition-transform active:scale-95">
                     <Icon size={20} />
                   </span>
                 ) : (
