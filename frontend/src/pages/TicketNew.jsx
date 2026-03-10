@@ -15,7 +15,7 @@ export default function TicketNew() {
   const [formData, setFormData] = useState({
     title: prefill.prefillTitle || '',
     description: prefill.prefillDescription || '',
-    category: CATEGORY_OPTIONS[0].value,
+    category: 'auto',
     priority: 'medium',
     department: '',
   })
@@ -159,6 +159,11 @@ export default function TicketNew() {
               </select>
               <ChevronDown size={18} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-500" />
             </div>
+            {role !== 'admin' && (
+              <p className="mt-1 text-xs text-slate-400">
+                Opțional — lasă pe Autodetectare și AI-ul va alege categoria potrivită.
+              </p>
+            )}
           </div>
 
           {role === 'admin' && (
@@ -198,6 +203,31 @@ export default function TicketNew() {
           )}
         </div>
 
+        {role !== 'admin' && (
+          <div
+            className={`flex gap-2 rounded-xl border p-3 ${
+              formData.category === 'auto'
+                ? 'border-blue-100 bg-blue-50'
+                : 'border-green-100 bg-green-50'
+            }`}
+          >
+            {formData.category === 'auto' ? (
+              <Info size={16} className="mt-0.5 flex-shrink-0 text-blue-500" />
+            ) : (
+              <CheckCircle2 size={16} className="mt-0.5 flex-shrink-0 text-green-500" />
+            )}
+            <p
+              className={`text-xs ${
+                formData.category === 'auto' ? 'text-blue-700' : 'text-green-700'
+              }`}
+            >
+              {formData.category === 'auto'
+                ? 'Categoria și departamentul vor fi determinate automat pe baza descrierii tale.'
+                : 'Tichetul va fi direcționat pe baza categoriei alese.'}
+            </p>
+          </div>
+        )}
+
         <div>
           <p className="mb-1 text-sm font-medium text-slate-700">Prioritate</p>
           <div className="grid grid-cols-4 gap-1 rounded-xl bg-slate-100 p-1">
@@ -219,15 +249,6 @@ export default function TicketNew() {
             })}
           </div>
         </div>
-
-        {role !== 'admin' && (
-          <div className="flex gap-2 rounded-xl border border-blue-100 bg-blue-50 p-3">
-            <Info size={16} className="mt-0.5 flex-shrink-0 text-blue-500" />
-            <p className="text-xs text-blue-700">
-              Tichetul va fi direcționat automat către departamentul potrivit pe baza descrierii tale.
-            </p>
-          </div>
-        )}
 
         {successMessage && (
           <div className="rounded-xl border border-green-200 bg-green-50 p-4 text-center text-green-700">
