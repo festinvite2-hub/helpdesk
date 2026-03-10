@@ -1,6 +1,22 @@
 import { ROLE_LABELS } from '../../context/AuthContext'
 
-export default function RolePicker({ role, onRoleChange }) {
+export default function RolePicker({ role, onRoleChange, compact = false }) {
+  if (compact) {
+    return (
+      <select
+        value={role}
+        onChange={(event) => onRoleChange(event.target.value)}
+        className="rounded-full border-0 bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700 outline-none"
+      >
+        {Object.entries(ROLE_LABELS).map(([value, label]) => (
+          <option key={value} value={value}>
+            {label}
+          </option>
+        ))}
+      </select>
+    )
+  }
+
   return (
     <label className="block text-sm">
       <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">
