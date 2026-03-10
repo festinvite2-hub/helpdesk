@@ -1,5 +1,5 @@
 import { createContext, useContext, useMemo, useState } from 'react'
-import { Bot, Building2, Home, PlusCircle, Shield, Users } from 'lucide-react'
+import { BookOpen, Bot, Building2, Home, PlusCircle, Shield, Users, Workflow } from 'lucide-react'
 import { Navigate, useLocation } from 'react-router-dom'
 
 export const AuthContext = createContext(null)
@@ -19,12 +19,17 @@ export const roleLinks = {
   dept_manager: [
     { to: '/dashboard', label: 'Panou principal', icon: Home },
     { to: '/dept/dashboard', label: 'Departament', icon: Building2 },
+    { to: '/tickets/new', label: 'Creează tichet nou', icon: PlusCircle },
     { to: '/assistant', label: 'Asistent', icon: Bot },
   ],
   admin: [
-    { to: '/admin/dashboard', label: 'Admin', icon: Shield },
+    { to: '/admin/dashboard', label: 'Panou administrare', icon: Shield },
     { to: '/admin/departments', label: 'Departamente', icon: Building2 },
+    { to: '/admin/routing-rules', label: 'Reguli de rutare', icon: Workflow },
+    { to: '/admin/kb', label: 'Bază de cunoștințe', icon: BookOpen },
     { to: '/admin/users', label: 'Utilizatori', icon: Users },
+    { to: '/tickets/new', label: 'Creează tichet nou', icon: PlusCircle },
+    { to: '/assistant', label: 'Asistent', icon: Bot },
   ],
 }
 
