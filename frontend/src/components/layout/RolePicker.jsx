@@ -5,10 +5,10 @@ const ROLE_OPTIONS = ['user', 'responsible', 'admin']
 export default function RolePicker({ role, onRoleChange, compact = false }) {
   if (compact) {
     return (
-      <select
+        <select
         value={role}
         onChange={(event) => onRoleChange(event.target.value)}
-        className="rounded-full border-0 bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700 outline-none"
+        className="min-h-[36px] rounded-full border-0 bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700 outline-none transition-colors active:bg-slate-200"
       >
         {ROLE_OPTIONS.map((value) => (
           <option key={value} value={value}>
@@ -27,7 +27,7 @@ export default function RolePicker({ role, onRoleChange, compact = false }) {
       <select
         value={role}
         onChange={(event) => onRoleChange(event.target.value)}
-        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+        className="min-h-[44px] w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-base"
       >
         {ROLE_OPTIONS.map((value) => (
           <option key={value} value={value}>

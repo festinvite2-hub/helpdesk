@@ -17,7 +17,7 @@ export default function AppLayout() {
         <Sidebar />
 
         <div className="flex-1 flex flex-col min-h-screen">
-          <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 px-4 py-2 backdrop-blur">
+          <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 px-4 py-2 pt-[env(safe-area-inset-top)] backdrop-blur">
             <div className="mx-auto flex max-w-5xl items-center justify-between gap-3">
               <div className="md:hidden">
                 <Brand mobile />
@@ -33,7 +33,7 @@ export default function AppLayout() {
             </div>
           </header>
 
-          <main className="flex-1 p-4 md:p-8 pb-20 md:pb-8 max-w-5xl mx-auto w-full">
+          <main className="mx-auto w-full max-w-5xl flex-1 p-4 pb-24 md:p-8 md:pb-8">
             <Suspense fallback={<LoadingSkeleton />}>
               <Outlet />
             </Suspense>

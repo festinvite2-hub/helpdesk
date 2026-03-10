@@ -81,7 +81,7 @@ export default function TicketNew() {
               type="text"
               value={formData.title}
               onChange={handleChange}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-blue-500 focus:ring"
+              className="min-h-[44px] w-full rounded-xl border border-slate-300 px-3 py-2 text-base outline-none ring-blue-500 focus:ring"
               placeholder="Rezumat scurt al problemei"
               aria-invalid={Boolean(errors.title)}
               aria-describedby={errors.title ? 'title-error' : undefined}
@@ -103,7 +103,7 @@ export default function TicketNew() {
               rows={5}
               value={formData.description}
               onChange={handleChange}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-blue-500 focus:ring"
+              className="w-full rounded-xl border border-slate-300 px-3 py-2 text-base outline-none ring-blue-500 focus:ring"
               placeholder="Descrie ce s-a întâmplat, comportamentul așteptat și urgența"
               aria-invalid={Boolean(errors.description)}
               aria-describedby={errors.description ? 'description-error' : undefined}
@@ -125,7 +125,7 @@ export default function TicketNew() {
                 name="category"
                 value={formData.category}
                 onChange={handleChange}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-blue-500 focus:ring"
+                className="min-h-[44px] w-full rounded-xl border border-slate-300 px-3 py-2 text-base outline-none ring-blue-500 focus:ring"
               >
                 {CATEGORY_OPTIONS.map((category) => (
                   <option key={category.value} value={category.value}>
@@ -144,7 +144,7 @@ export default function TicketNew() {
                 name="priority"
                 value={formData.priority}
                 onChange={handleChange}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-blue-500 focus:ring"
+                className="min-h-[44px] w-full rounded-xl border border-slate-300 px-3 py-2 text-base outline-none ring-blue-500 focus:ring"
               >
                 {PRIORITY_OPTIONS.map((priority) => (
                   <option key={priority.value} value={priority.value}>
@@ -164,7 +164,7 @@ export default function TicketNew() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-blue-300"
+            className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-all active:scale-[0.98] active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
           >
             {isSubmitting ? (
               <>

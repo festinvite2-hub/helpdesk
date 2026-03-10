@@ -12,7 +12,7 @@ export default function Navigation({ links }) {
             <li key={to}>
               <Link
                 to={to}
-                className={`flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium ${
+                className={`flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors active:bg-slate-200 ${
                   active ? 'bg-blue-50 text-blue-700' : 'text-slate-700 hover:bg-slate-100'
                 }`}
               >
