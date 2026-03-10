@@ -58,16 +58,22 @@ export default function Profile() {
 
   return (
     <section className="space-y-4 md:mx-auto md:max-w-lg">
-      <header className="pt-1">
-        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-blue-100 text-2xl font-bold text-blue-600">
-          {getInitials(profile.name)}
+      <header className="space-y-4 pt-1">
+        <div>
+          <h1 className="text-xl font-bold text-slate-900">Profil</h1>
+          <p className="mt-1 text-sm text-slate-500">Gestionează datele contului și preferințele aplicației</p>
         </div>
-        <h1 className="mt-3 text-center text-lg font-semibold text-slate-900">{profile.name}</h1>
-        <p className="text-center text-sm text-slate-500">{profile.email}</p>
-        <div className="mt-2 flex justify-center">
-          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${ROLE_BADGE_CLASSES[profile.role]}`}>
-            {ROLE_LABELS[profile.role]}
-          </span>
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-blue-100 text-2xl font-bold text-blue-600">
+            {getInitials(profile.name)}
+          </div>
+          <h2 className="mt-3 text-center text-base font-semibold text-slate-900">{profile.name}</h2>
+          <p className="text-center text-sm text-slate-500">{profile.email}</p>
+          <div className="mt-2 flex justify-center">
+            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${ROLE_BADGE_CLASSES[profile.role]}`}>
+              {ROLE_LABELS[profile.role]}
+            </span>
+          </div>
         </div>
       </header>
 

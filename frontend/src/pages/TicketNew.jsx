@@ -76,7 +76,7 @@ export default function TicketNew() {
     <section className="w-full md:mx-auto md:max-w-2xl">
       <header className="mb-4 space-y-1">
         <h1 className="text-xl font-bold">Creează tichet nou</h1>
-        <p className="text-sm text-slate-500">
+        <p className="mt-1 text-sm text-slate-500">
           {role === 'admin'
             ? 'Creează un tichet și alege departamentul destinație.'
             : 'Descrie problema ta și o vom direcționa automat.'}

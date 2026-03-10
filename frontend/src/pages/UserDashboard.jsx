@@ -42,7 +42,7 @@ export default function UserDashboard() {
   return (
     <section className="space-y-6">
       <header>
-        <h1 className="text-lg font-semibold text-slate-900">Bună! 👋</h1>
+        <h1 className="text-xl font-bold text-slate-900">Panou principal</h1>
         <p className="mt-1 text-sm text-slate-500">Ai {activeTicketsCount} tichete active</p>
       </header>
 

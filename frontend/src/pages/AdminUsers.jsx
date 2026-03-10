@@ -91,7 +91,7 @@ export default function AdminUsers() {
       <header className="mb-4 flex items-center justify-between gap-2">
         <div>
           <h1 className="text-xl font-bold">Utilizatori</h1>
-          <p className="text-sm text-slate-500">{activeUsers} utilizatori activi</p>
+          <p className="mt-1 text-sm text-slate-500">{activeUsers} utilizatori activi</p>
         </div>
         <button
           type="button"
