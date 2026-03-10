@@ -157,6 +157,57 @@ export const MOCK_INBOX_TICKETS = [
   },
 ]
 
+export const MOCK_MY_TICKETS_USER = [
+  ...MOCK_USER_TICKETS,
+  {
+    id: '30',
+    ticket_number: 'TK-0030',
+    title: 'Xerox-ul nu scanează pe email',
+    description: 'Funcția de scan to email nu mai funcționează pe xerox-ul din hol.',
+    status: 'open',
+    priority: 'medium',
+    category: 'Hardware',
+    department: 'IT',
+    department_color: '#3B82F6',
+    created_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+    updated_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+  },
+]
+
+export const MOCK_MY_TICKETS_RESPONSIBLE = [
+  ...MOCK_INBOX_TICKETS,
+  {
+    id: '31',
+    ticket_number: 'TK-0031',
+    title: 'Laptop nou nu pornește',
+    description: 'Laptopul Lenovo nou primit ieri nu pornește deloc.',
+    status: 'resolved',
+    priority: 'high',
+    category: 'Hardware',
+    department: 'IT',
+    department_color: '#3B82F6',
+    created_by: 'Prof. Georgescu',
+    created_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+    updated_at: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
+    resolved_at: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: '32',
+    ticket_number: 'TK-0032',
+    title: 'Router WiFi defect în sala 305',
+    description: 'Access point-ul din sala 305 nu mai emite semnal.',
+    status: 'closed',
+    priority: 'medium',
+    category: 'Rețea/WiFi',
+    department: 'IT',
+    department_color: '#3B82F6',
+    created_by: 'Elena Dumitrescu',
+    created_at: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
+    updated_at: new Date(Date.now() - 18 * 24 * 60 * 60 * 1000).toISOString(),
+    resolved_at: new Date(Date.now() - 18 * 24 * 60 * 60 * 1000).toISOString(),
+  },
+]
+
 export const MOCK_ALL_TICKETS = [
   ...MOCK_USER_TICKETS,
   ...MOCK_INBOX_TICKETS,
