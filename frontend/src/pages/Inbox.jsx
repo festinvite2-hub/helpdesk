@@ -1,5 +1,148 @@
-import CardPage from '../components/common/CardPage'
+import { useMemo, useState } from 'react'
+import { Inbox as InboxIcon } from 'lucide-react'
+import TicketCard from '../components/tickets/TicketCard'
+import InboxTable from '../components/tickets/InboxTable'
+import { MOCK_INBOX_TICKETS } from '../mocks/tickets'
+
+const FILTERS = [
+  {
+    key: 'all',
+    label: 'Toate',
+    value: null,
+    activeClassName: 'bg-slate-900 text-white',
+    inactiveClassName: 'bg-slate-100 text-slate-600',
+  },
+  {
+    key: 'open',
+    label: 'Noi',
+    value: 'open',
+    activeClassName: 'bg-blue-600 text-white',
+    inactiveClassName: 'bg-blue-50 text-blue-700',
+  },
+  {
+    key: 'in_progress',
+    label: 'În lucru',
+    value: 'in_progress',
+    activeClassName: 'bg-yellow-500 text-white',
+    inactiveClassName: 'bg-yellow-50 text-yellow-700',
+  },
+  {
+    key: 'waiting',
+    label: 'Așteptare',
+    value: 'waiting',
+    activeClassName: 'bg-orange-500 text-white',
+    inactiveClassName: 'bg-orange-50 text-orange-700',
+  },
+  {
+    key: 'resolved',
+    label: 'Rezolvate',
+    value: 'resolved',
+    activeClassName: 'bg-green-600 text-white',
+    inactiveClassName: 'bg-green-50 text-green-700',
+  },
+]
 
 export default function Inbox() {
-  return <CardPage title="Tichete primite" description="Tichetele asignate ție pentru rezolvare." />
+  const [activeFilter, setActiveFilter] = useState(null)
+
+  const openCount = MOCK_INBOX_TICKETS.filter((ticket) => ticket.status === 'open').length
+  const inProgressCount = MOCK_INBOX_TICKETS.filter((ticket) => ticket.status === 'in_progress').length
+  const urgentCount = MOCK_INBOX_TICKETS.filter(
+    (ticket) => ['critical', 'high'].includes(ticket.priority) && ticket.status === 'open'
+  ).length
+
+  const today = new Date()
+  const resolvedTodayCount = MOCK_INBOX_TICKETS.filter((ticket) => {
+    if (!ticket.resolved_at) {
+      return false
+    }
+    const resolvedDate = new Date(ticket.resolved_at)
+    return (
+      resolvedDate.getDate() === today.getDate() &&
+      resolvedDate.getMonth() === today.getMonth() &&
+      resolvedDate.getFullYear() === today.getFullYear()
+    )
+  }).length
+
+  const filteredTickets = activeFilter
+    ? MOCK_INBOX_TICKETS.filter((ticket) => ticket.status === activeFilter)
+    : MOCK_INBOX_TICKETS
+
+  const sortedTickets = [...filteredTickets].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  )
+
+  const filterLabels = useMemo(
+    () => ({
+      open: 'Noi',
+      in_progress: 'În lucru',
+      waiting: 'Așteptare',
+      resolved: 'Rezolvate',
+    }),
+    []
+  )
+
+  const getFilterCount = (filterValue) => {
+    if (!filterValue) {
+      return MOCK_INBOX_TICKETS.length
+    }
+    return MOCK_INBOX_TICKETS.filter((ticket) => ticket.status === filterValue).length
+  }
+
+  return (
+    <section className="space-y-4">
+      <header>
+        <h1 className="text-xl font-bold text-slate-900">Tichete primite</h1>
+        <p className="mt-1 text-sm text-slate-500">
+          {openCount} tichete noi · {inProgressCount} în lucru
+        </p>
+      </header>
+
+      <div className="rounded-lg bg-slate-50 px-3 py-2">
+        <div className="flex justify-between gap-2">
+          <p className="text-xs text-slate-500">🔴 {urgentCount} urgente</p>
+          <p className="text-xs text-slate-500">⏱ ~3h timp mediu</p>
+          <p className="text-xs text-slate-500">✅ {resolvedTodayCount || 1} azi</p>
+        </div>
+      </div>
+
+      <div className="scrollbar-hide -mx-4 flex gap-2 overflow-x-auto px-4 pb-2 md:mx-0 md:overflow-visible md:px-0">
+        {FILTERS.map((filter) => {
+          const isActive = filter.value === activeFilter
+          const count = getFilterCount(filter.value)
+
+          return (
+            <button
+              key={filter.key}
+              type="button"
+              onClick={() => setActiveFilter(isActive ? null : filter.value)}
+              className={`flex min-h-[36px] items-center gap-1 whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                isActive ? filter.activeClassName : filter.inactiveClassName
+              }`}
+            >
+              {filter.label} ({count})
+            </button>
+          )
+        })}
+      </div>
+
+      {sortedTickets.length === 0 ? (
+        <div className="flex min-h-[280px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-white px-6 py-8 text-center">
+          <InboxIcon size={40} className="text-slate-300" />
+          <p className="mt-3 text-sm font-medium text-slate-600">
+            Niciun tichet cu statusul «{filterLabels[activeFilter] ?? 'Toate'}»
+          </p>
+        </div>
+      ) : (
+        <>
+          <div className="flex flex-col gap-3 md:hidden">
+            {sortedTickets.map((ticket) => (
+              <TicketCard key={ticket.id} ticket={ticket} showCreatedBy />
+            ))}
+          </div>
+          <InboxTable tickets={sortedTickets} />
+        </>
+      )}
+    </section>
+  )
 }
