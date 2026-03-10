@@ -1,5 +1,7 @@
 import { ROLE_LABELS } from '../../context/AuthContext'
 
+const ROLE_OPTIONS = ['user', 'responsible', 'admin']
+
 export default function RolePicker({ role, onRoleChange, compact = false }) {
   if (compact) {
     return (
@@ -8,9 +10,9 @@ export default function RolePicker({ role, onRoleChange, compact = false }) {
         onChange={(event) => onRoleChange(event.target.value)}
         className="rounded-full border-0 bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700 outline-none"
       >
-        {Object.entries(ROLE_LABELS).map(([value, label]) => (
+        {ROLE_OPTIONS.map((value) => (
           <option key={value} value={value}>
-            {label}
+            {ROLE_LABELS[value]}
           </option>
         ))}
       </select>
@@ -27,9 +29,9 @@ export default function RolePicker({ role, onRoleChange, compact = false }) {
         onChange={(event) => onRoleChange(event.target.value)}
         className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
       >
-        {Object.entries(ROLE_LABELS).map(([value, label]) => (
+        {ROLE_OPTIONS.map((value) => (
           <option key={value} value={value}>
-            {label}
+            {ROLE_LABELS[value]}
           </option>
         ))}
       </select>
