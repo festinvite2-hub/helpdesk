@@ -1,5 +1,7 @@
+import { Suspense } from 'react'
 import { Link, Outlet } from 'react-router-dom'
 import { roleLinks, useAuth } from '../../context/AuthContext'
+import LoadingSkeleton from '../common/LoadingSkeleton'
 import Brand from './Brand'
 import Navigation from './Navigation'
 import RoleBadge from './RoleBadge'
@@ -32,7 +34,9 @@ export default function AppLayout() {
           </header>
 
           <main className="mx-auto w-full max-w-5xl flex-1 p-4 md:p-8">
-            <Outlet />
+            <Suspense fallback={<LoadingSkeleton />}>
+              <Outlet />
+            </Suspense>
           </main>
 
           <nav className="fixed bottom-0 left-0 right-0 border-t border-slate-200 bg-white md:hidden">

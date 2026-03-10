@@ -1,22 +1,32 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import LoadingSkeleton from './components/common/LoadingSkeleton'
 import AppLayout from './components/layout/AppLayout'
 import { AuthProvider, RoleGuard } from './context/AuthContext'
-import AdminDashboard from './pages/AdminDashboard'
-import AdminDepartments from './pages/AdminDepartments'
-import AdminKnowledgeBase from './pages/AdminKnowledgeBase'
-import AdminRoutingRules from './pages/AdminRoutingRules'
-import AdminUsers from './pages/AdminUsers'
-import AiAssistant from './pages/AiAssistant'
-import DeptDashboard from './pages/DeptDashboard'
-import Login from './pages/Login'
-import TicketDetail from './pages/TicketDetail'
-import TicketNew from './pages/TicketNew'
-import UserDashboard from './pages/UserDashboard'
+
+const Login = lazy(() => import('./pages/Login'))
+const UserDashboard = lazy(() => import('./pages/UserDashboard'))
+const TicketNew = lazy(() => import('./pages/TicketNew'))
+const TicketDetail = lazy(() => import('./pages/TicketDetail'))
+const AiAssistant = lazy(() => import('./pages/AiAssistant'))
+const DeptDashboard = lazy(() => import('./pages/DeptDashboard'))
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'))
+const AdminDepartments = lazy(() => import('./pages/AdminDepartments'))
+const AdminRoutingRules = lazy(() => import('./pages/AdminRoutingRules'))
+const AdminKnowledgeBase = lazy(() => import('./pages/AdminKnowledgeBase'))
+const AdminUsers = lazy(() => import('./pages/AdminUsers'))
 
 function RoutesConfig() {
   return (
     <Routes>
-      <Route path="/login" element={<Login />} />
+      <Route
+        path="/login"
+        element={
+          <Suspense fallback={<LoadingSkeleton />}>
+            <Login />
+          </Suspense>
+        }
+      />
       <Route
         element={
           <RoleGuard>
