@@ -95,13 +95,15 @@ export default function AiAssistant() {
 
   return (
     <section className="flex h-[calc(100vh-64px)] flex-col md:mx-auto md:max-w-2xl md:px-8">
-      <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-3">
-        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-purple-100 text-purple-600">
-          <Bot size={18} />
-        </div>
-        <div>
-          <h1 className="text-sm font-semibold text-slate-900">Asistent AI</h1>
-          <p className="text-xs text-green-500">Online · Răspunde instant</p>
+      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white px-4 py-3">
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-purple-100 text-purple-600">
+            <Bot size={18} />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-slate-900">Asistent AI</h1>
+            <p className="mt-1 text-sm text-slate-500">Online · Răspunde instant</p>
+          </div>
         </div>
       </header>
 

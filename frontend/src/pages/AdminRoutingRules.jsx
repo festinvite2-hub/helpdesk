@@ -104,7 +104,7 @@ export default function AdminRoutingRules() {
       <header className="mb-4 flex items-center justify-between gap-2">
         <div>
           <h1 className="text-xl font-bold">Reguli de rutare</h1>
-          <p className="text-sm text-slate-500">
+          <p className="mt-1 text-sm text-slate-500">
             {activeRulesCount} reguli active · Prioritate: mai mic = verificat primul
           </p>
         </div>

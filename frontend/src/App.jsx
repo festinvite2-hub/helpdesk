@@ -2,7 +2,7 @@ import { lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import LoadingSkeleton from './components/common/LoadingSkeleton'
 import AppLayout from './components/layout/AppLayout'
-import { AuthProvider, RoleGuard } from './context/AuthContext'
+import { AuthProvider, RoleGuard, useAuth } from './context/AuthContext'
 
 const Login = lazy(() => import('./pages/Login'))
 const UserDashboard = lazy(() => import('./pages/UserDashboard'))
@@ -17,6 +17,14 @@ const AdminDepartments = lazy(() => import('./pages/AdminDepartments'))
 const AdminRoutingRules = lazy(() => import('./pages/AdminRoutingRules'))
 const AdminKnowledgeBase = lazy(() => import('./pages/AdminKnowledgeBase'))
 const AdminUsers = lazy(() => import('./pages/AdminUsers'))
+
+
+function RoleRedirect() {
+  const { role } = useAuth()
+  const fallback = role === 'admin' ? '/admin/dashboard' : role === 'responsible' ? '/inbox' : '/dashboard'
+
+  return <Navigate to={fallback} replace />
+}
 
 function RoutesConfig() {
   return (
@@ -50,7 +58,7 @@ function RoutesConfig() {
         <Route path="/admin/kb" element={<AdminKnowledgeBase />} />
         <Route path="/admin/users" element={<AdminUsers />} />
       </Route>
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      <Route path="*" element={<RoleRedirect />} />
     </Routes>
   )
 }

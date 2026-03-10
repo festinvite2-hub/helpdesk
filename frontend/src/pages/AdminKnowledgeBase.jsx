@@ -161,7 +161,7 @@ export default function AdminKnowledgeBase() {
       <header className="flex items-center justify-between gap-2">
         <div>
           <h1 className="text-xl font-bold">Bază de cunoștințe</h1>
-          <p className="text-sm text-slate-500">
+          <p className="mt-1 text-sm text-slate-500">
             {documents.length} documente · {totalChunks} chunk-uri indexate
           </p>
         </div>

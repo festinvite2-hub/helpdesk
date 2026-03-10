@@ -63,7 +63,7 @@ export default function AdminDepartments() {
       <header className="mb-4 flex items-center justify-between gap-2">
         <div>
           <h1 className="text-xl font-bold">Departamente</h1>
-          <p className="text-sm text-slate-500">{activeDepartments} departamente active</p>
+          <p className="mt-1 text-sm text-slate-500">{activeDepartments} departamente active</p>
         </div>
         <button
           type="button"
