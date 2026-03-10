@@ -1,4 +1,15 @@
-import { Bot, ClipboardList, Home, PlusCircle, User } from 'lucide-react'
+import {
+  Bot,
+  Building2,
+  ClipboardList,
+  Home,
+  Inbox,
+  PlusCircle,
+  Shield,
+  User,
+  Users,
+  Workflow,
+} from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 
@@ -6,24 +17,33 @@ export default function BottomNav() {
   const { role } = useAuth()
   const { pathname } = useLocation()
 
-  const homeRoute =
-    role === 'admin'
-      ? '/admin/dashboard'
-      : role === 'dept_manager'
-        ? '/dept/dashboard'
-        : '/dashboard'
+  const tabsByRole = {
+    user: [
+      { label: 'Acasă', icon: Home, to: '/dashboard' },
+      { label: 'Tickete', icon: ClipboardList, to: '/my-tickets' },
+      { label: 'Ticket Nou', icon: PlusCircle, to: '/tickets/new', isCenter: true },
+      { label: 'Asistent', icon: Bot, to: '/assistant' },
+      { label: 'Profil', icon: User, to: '/profile' },
+    ],
+    responsible: [
+      { label: 'Primite', icon: Inbox, to: '/inbox' },
+      { label: 'Tickete', icon: ClipboardList, to: '/my-tickets' },
+      { label: 'Profil', icon: User, to: '/profile' },
+    ],
+    admin: [
+      { label: 'Admin', icon: Shield, to: '/admin/dashboard' },
+      { label: 'Departamente', icon: Building2, to: '/admin/departments' },
+      { label: 'Ticket Nou', icon: PlusCircle, to: '/tickets/new', isCenter: true },
+      { label: 'Utilizatori', icon: Users, to: '/admin/users' },
+      { label: 'Rutare', icon: Workflow, to: '/admin/routing-rules' },
+    ],
+  }
 
-  const tabs = [
-    { label: 'Acasă', icon: Home, to: homeRoute },
-    { label: 'Ticketele mele', icon: ClipboardList, to: homeRoute },
-    { label: 'Ticket Nou', icon: PlusCircle, to: '/tickets/new', isCenter: true },
-    { label: 'Asistent', icon: Bot, to: '/assistant' },
-    { label: 'Profil', icon: User, to: homeRoute },
-  ]
+  const tabs = tabsByRole[role] || tabsByRole.user
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white shadow-[0_-1px_3px_rgba(0,0,0,0.05)] md:hidden pb-[env(safe-area-inset-bottom)]">
-      <ul className="grid h-16 grid-cols-5">
+      <ul className={`grid h-16 ${role === 'responsible' ? 'grid-cols-3' : 'grid-cols-5'}`}>
         {tabs.map(({ label, icon: Icon, to, isCenter }) => {
           const isActive = pathname === to || (!isCenter && pathname.startsWith(`${to}/`))
 

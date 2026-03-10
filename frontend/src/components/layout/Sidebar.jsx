@@ -5,7 +5,7 @@ import RolePicker from './RolePicker'
 
 export default function Sidebar() {
   const { role, setRole } = useAuth()
-  const links = roleLinks[role]
+  const links = roleLinks[role] || roleLinks.user
 
   return (
     <aside className="hidden h-screen w-64 sticky top-0 border-r border-slate-200 bg-white p-5 md:flex md:flex-col">

@@ -9,7 +9,9 @@ const UserDashboard = lazy(() => import('./pages/UserDashboard'))
 const TicketNew = lazy(() => import('./pages/TicketNew'))
 const TicketDetail = lazy(() => import('./pages/TicketDetail'))
 const AiAssistant = lazy(() => import('./pages/AiAssistant'))
-const DeptDashboard = lazy(() => import('./pages/DeptDashboard'))
+const MyTickets = lazy(() => import('./pages/MyTickets'))
+const Inbox = lazy(() => import('./pages/Inbox'))
+const Profile = lazy(() => import('./pages/Profile'))
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'))
 const AdminDepartments = lazy(() => import('./pages/AdminDepartments'))
 const AdminRoutingRules = lazy(() => import('./pages/AdminRoutingRules'))
@@ -38,8 +40,10 @@ function RoutesConfig() {
         <Route path="/dashboard" element={<UserDashboard />} />
         <Route path="/tickets/new" element={<TicketNew />} />
         <Route path="/tickets/:id" element={<TicketDetail />} />
+        <Route path="/my-tickets" element={<MyTickets />} />
         <Route path="/assistant" element={<AiAssistant />} />
-        <Route path="/dept/dashboard" element={<DeptDashboard />} />
+        <Route path="/inbox" element={<Inbox />} />
+        <Route path="/profile" element={<Profile />} />
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
         <Route path="/admin/departments" element={<AdminDepartments />} />
         <Route path="/admin/routing-rules" element={<AdminRoutingRules />} />
