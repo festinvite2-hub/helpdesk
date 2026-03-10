@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { CheckCircle2, ChevronDown, Info, Loader2 } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { createTicketMock } from '../api/tickets'
 import { CATEGORY_OPTIONS, PRIORITY_OPTIONS } from '../config/constants'
 import { useAuth } from '../context/AuthContext'
@@ -9,10 +9,12 @@ import { MOCK_DEPARTMENTS } from '../mocks/tickets'
 export default function TicketNew() {
   const { role } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+  const prefill = location.state || {}
   const descriptionRef = useRef(null)
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
+    title: prefill.prefillTitle || '',
+    description: prefill.prefillDescription || '',
     category: CATEGORY_OPTIONS[0].value,
     priority: 'medium',
     department: '',
