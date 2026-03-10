@@ -16,6 +16,11 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U helpdesk -d helpdesk"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   n8n:
     image: n8nio/n8n:latest
@@ -41,30 +46,20 @@ services:
       - n8n_data:/home/node/.n8n
       - ./n8n/workflows:/workflows
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 
   ollama:
     image: ollama/ollama:latest
     container_name: helpdesk-ollama
     restart: unless-stopped
+    environment:
+      - OLLAMA_HOST=0.0.0.0
     ports:
       - "${OLLAMA_PORT}:11434"
     volumes:
       - ollama_data:/root/.ollama
 
-  nginx:
-    image: nginx:alpine
-    container_name: helpdesk-nginx
-    restart: unless-stopped
-    ports:
-      - "${NGINX_PORT}:80"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
-      - ./frontend/dist:/usr/share/nginx/html:ro
-    depends_on:
-      - n8n
-      - ollama
 
 volumes:
   postgres_data:
