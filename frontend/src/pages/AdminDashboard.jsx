@@ -8,14 +8,15 @@ import {
   Users,
   Workflow,
 } from 'lucide-react'
-import { useState } from 'react'
-import { updateTicketStatus } from '../api/tickets'
+import { useEffect, useMemo, useState } from 'react'
+import { getAllTickets, updateTicketStatus } from '../api/tickets'
+import { getDepartments } from '../api/departments'
 import TicketCard from '../components/tickets/TicketCard'
 import AdminTicketTable from '../components/admin/AdminTicketTable'
 import DepartmentCard from '../components/admin/DepartmentCard'
 import QuickActionCard from '../components/admin/QuickActionCard'
 import { useAuth } from '../context/AuthContext'
-import { MOCK_ALL_TICKETS, MOCK_DEPARTMENTS } from '../mocks/tickets'
+import LoadingSkeleton from '../components/common/LoadingSkeleton'
 
 const STAT_CARD_CONFIG = [
   {
@@ -81,16 +82,46 @@ const QUICK_ACTIONS = [
 
 export default function AdminDashboard() {
   const { user } = useAuth()
-  const [allTickets, setAllTickets] = useState(MOCK_ALL_TICKETS)
+  const [allTickets, setAllTickets] = useState([])
+  const [departments, setDepartments] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(null)
   const [statusError, setStatusError] = useState(null)
   const [updatingTicketIds, setUpdatingTicketIds] = useState({})
+
+  useEffect(() => {
+    async function loadDashboardData() {
+      try {
+        const [ticketsResult, departmentsResult] = await Promise.all([getAllTickets(), getDepartments()])
+        setAllTickets(Array.isArray(ticketsResult) ? ticketsResult : ticketsResult?.tickets ?? [])
+        setDepartments(Array.isArray(departmentsResult) ? departmentsResult : [])
+        setLoadError(null)
+      } catch (error) {
+        setLoadError(error.message || 'Nu s-au putut încărca datele panoului de administrare.')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadDashboardData()
+  }, [])
 
   const totalTickets = allTickets.length
   const openTickets = allTickets.filter((ticket) => ticket.status === 'open').length
   const criticalOpenTickets = allTickets.filter(
     (ticket) => ['critical', 'high'].includes(ticket.priority) && ticket.status === 'open'
   ).length
-  const resolvedTodayTickets = 2
+  const resolvedTodayTickets = allTickets.filter((ticket) => {
+    if (!ticket.resolved_at) return false
+    const resolvedDate = new Date(ticket.resolved_at)
+    const now = new Date()
+
+    return (
+      resolvedDate.getDate() === now.getDate() &&
+      resolvedDate.getMonth() === now.getMonth() &&
+      resolvedDate.getFullYear() === now.getFullYear()
+    )
+  }).length
 
   const statValues = {
     total: totalTickets,
@@ -102,6 +133,62 @@ export default function AdminDashboard() {
   const recentTickets = [...allTickets]
     .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
     .slice(0, 5)
+
+  const departmentCards = useMemo(() => {
+    const ticketGroups = allTickets.reduce((acc, ticket) => {
+      const key = ticket.department || 'Necunoscut'
+      if (!acc[key]) {
+        acc[key] = {
+          ticketCount: 0,
+          openCount: 0,
+          totalResolutionMs: 0,
+          resolvedCount: 0,
+          color: ticket.department_color || '#94a3b8',
+        }
+      }
+
+      acc[key].ticketCount += 1
+      if (ticket.status === 'open') acc[key].openCount += 1
+
+      if (ticket.resolved_at) {
+        const createdAt = new Date(ticket.created_at).getTime()
+        const resolvedAt = new Date(ticket.resolved_at).getTime()
+
+        if (!Number.isNaN(createdAt) && !Number.isNaN(resolvedAt) && resolvedAt >= createdAt) {
+          acc[key].totalResolutionMs += resolvedAt - createdAt
+          acc[key].resolvedCount += 1
+        }
+      }
+
+      return acc
+    }, {})
+
+    return departments.map((department) => {
+      const group = ticketGroups[department.name] || {
+        ticketCount: 0,
+        openCount: 0,
+        totalResolutionMs: 0,
+        resolvedCount: 0,
+        color: department.color || '#94a3b8',
+      }
+      const avgHours =
+        group.resolvedCount > 0
+          ? Math.max(1, Math.round(group.totalResolutionMs / group.resolvedCount / (60 * 60 * 1000)))
+          : null
+
+      return {
+        id: department.id,
+        name: department.name,
+        color: department.color || group.color,
+        ticketCount: group.ticketCount,
+        openCount: group.openCount,
+        avgResolveTime: avgHours ? `~${avgHours}h` : 'fără date',
+      }
+    })
+  }, [allTickets, departments])
+
+  if (loading) return <LoadingSkeleton />
+  if (loadError) return <p className="text-red-600">{loadError}</p>
 
   const handleStatusChange = async (ticketId, nextStatus) => {
     setStatusError(null)
@@ -154,33 +241,47 @@ export default function AdminDashboard() {
 
       <section className="space-y-3">
         <h2 className="text-base font-semibold text-slate-900">Per departament</h2>
-        <div className="scrollbar-hide -mx-4 flex gap-3 overflow-x-auto px-4 pb-2 md:mx-0 md:grid md:grid-cols-5 md:overflow-visible md:px-0">
-          {MOCK_DEPARTMENTS.map((department) => (
-            <DepartmentCard key={department.id} department={department} />
-          ))}
-        </div>
+        {departmentCards.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-slate-200 bg-white px-6 py-8 text-center">
+            <p className="text-sm text-slate-600">Nu există departamente disponibile.</p>
+          </div>
+        ) : (
+          <div className="scrollbar-hide -mx-4 flex gap-3 overflow-x-auto px-4 pb-2 md:mx-0 md:grid md:grid-cols-5 md:overflow-visible md:px-0">
+            {departmentCards.map((department) => (
+              <DepartmentCard key={department.id} department={department} />
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="space-y-3">
         <h2 className="text-base font-semibold text-slate-900">Activitate recentă</h2>
-        <div className="flex flex-col gap-3 md:hidden">
-          {recentTickets.map((ticket) => (
-            <TicketCard
-              key={ticket.id}
-              ticket={ticket}
-              showCreatedBy
-              onStatusChange={handleStatusChange}
-              isStatusUpdating={Boolean(updatingTicketIds[ticket.id])}
+        {recentTickets.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-slate-200 bg-white px-6 py-8 text-center">
+            <p className="text-sm text-slate-600">Nu există tichete disponibile.</p>
+          </div>
+        ) : (
+          <>
+            <div className="flex flex-col gap-3 md:hidden">
+              {recentTickets.map((ticket) => (
+                <TicketCard
+                  key={ticket.id}
+                  ticket={ticket}
+                  showCreatedBy
+                  onStatusChange={handleStatusChange}
+                  isStatusUpdating={Boolean(updatingTicketIds[ticket.id])}
+                  canEditStatus
+                />
+              ))}
+            </div>
+            <AdminTicketTable
+              tickets={recentTickets}
               canEditStatus
+              onStatusChange={handleStatusChange}
+              updatingTicketIds={updatingTicketIds}
             />
-          ))}
-        </div>
-        <AdminTicketTable
-          tickets={recentTickets}
-          canEditStatus
-          onStatusChange={handleStatusChange}
-          updatingTicketIds={updatingTicketIds}
-        />
+          </>
+        )}
       </section>
 
       <section className="space-y-3">
