@@ -17,7 +17,7 @@ const statusMap = {
   closed: { label: 'închis', className: 'bg-slate-100 text-slate-600' },
 }
 
-export default function TicketTable({ tickets = [], onStatusChange, updatingTicketIds = {} }) {
+export default function TicketTable({ tickets = [], onStatusChange, updatingTicketIds = {}, canEditStatus = false }) {
   const navigate = useNavigate()
 
   const statusOptions = [
@@ -62,28 +62,31 @@ export default function TicketTable({ tickets = [], onStatusChange, updatingTick
                   </span>
                 </td>
                 <td className="px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <span className={`rounded-full px-2 py-1 text-xs font-medium ${status.className}`}>
-                      {status.label}
-                    </span>
-                    <select
-                      value={ticket.status}
-                      onClick={(event) => event.stopPropagation()}
-                      onChange={(event) => {
-                        event.stopPropagation()
-                        onStatusChange?.(ticket.id, event.target.value)
-                      }}
-                      disabled={!onStatusChange || Boolean(updatingTicketIds?.[ticket.id])}
-                      className="min-h-[36px] rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {statusOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                    {Boolean(updatingTicketIds?.[ticket.id]) && <span className="text-xs text-slate-500">Se actualizează...</span>}
-                  </div>
+                  {canEditStatus ? (
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={ticket.status}
+                        onClick={(event) => event.stopPropagation()}
+                        onChange={(event) => {
+                          event.stopPropagation()
+                          onStatusChange?.(ticket.id, event.target.value)
+                        }}
+                        disabled={!onStatusChange || Boolean(updatingTicketIds?.[ticket.id])}
+                        className="min-h-[36px] rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {statusOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                      {Boolean(updatingTicketIds?.[ticket.id]) && (
+                        <span className="text-xs text-slate-500">Se actualizează...</span>
+                      )}
+                    </div>
+                  ) : (
+                    <span className={`rounded-full px-2 py-1 text-xs font-medium ${status.className}`}>{status.label}</span>
+                  )}
                 </td>
                 <td className="px-4 py-3">
                   <span

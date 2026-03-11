@@ -8,10 +8,13 @@ import {
   Users,
   Workflow,
 } from 'lucide-react'
+import { useState } from 'react'
+import { updateTicketStatus } from '../api/tickets'
 import TicketCard from '../components/tickets/TicketCard'
 import AdminTicketTable from '../components/admin/AdminTicketTable'
 import DepartmentCard from '../components/admin/DepartmentCard'
 import QuickActionCard from '../components/admin/QuickActionCard'
+import { useAuth } from '../context/AuthContext'
 import { MOCK_ALL_TICKETS, MOCK_DEPARTMENTS } from '../mocks/tickets'
 
 const STAT_CARD_CONFIG = [
@@ -77,7 +80,10 @@ const QUICK_ACTIONS = [
 ]
 
 export default function AdminDashboard() {
-  const allTickets = MOCK_ALL_TICKETS
+  const { user } = useAuth()
+  const [allTickets, setAllTickets] = useState(MOCK_ALL_TICKETS)
+  const [statusError, setStatusError] = useState(null)
+  const [updatingTicketIds, setUpdatingTicketIds] = useState({})
 
   const totalTickets = allTickets.length
   const openTickets = allTickets.filter((ticket) => ticket.status === 'open').length
@@ -97,6 +103,27 @@ export default function AdminDashboard() {
     .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
     .slice(0, 5)
 
+  const handleStatusChange = async (ticketId, nextStatus) => {
+    setStatusError(null)
+    setUpdatingTicketIds((current) => ({ ...current, [ticketId]: true }))
+
+    try {
+      await updateTicketStatus({
+        ticketId,
+        newStatus: nextStatus,
+        userId: user?.id,
+      })
+
+      setAllTickets((current) =>
+        current.map((ticket) => (ticket.id === ticketId ? { ...ticket, status: nextStatus } : ticket))
+      )
+    } catch {
+      setStatusError('Nu am putut actualiza statusul ticketului.')
+    } finally {
+      setUpdatingTicketIds((current) => ({ ...current, [ticketId]: false }))
+    }
+  }
+
   return (
     <section className="space-y-6">
       <header>
@@ -104,6 +131,7 @@ export default function AdminDashboard() {
         <p className="mt-1 text-sm text-slate-500">
           {totalTickets} tichete totale · {openTickets} deschise · {criticalOpenTickets} critice
         </p>
+        {statusError && <p className="mt-2 text-sm text-red-600">{statusError}</p>}
       </header>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -137,10 +165,22 @@ export default function AdminDashboard() {
         <h2 className="text-base font-semibold text-slate-900">Activitate recentă</h2>
         <div className="flex flex-col gap-3 md:hidden">
           {recentTickets.map((ticket) => (
-            <TicketCard key={ticket.id} ticket={ticket} showCreatedBy />
+            <TicketCard
+              key={ticket.id}
+              ticket={ticket}
+              showCreatedBy
+              onStatusChange={handleStatusChange}
+              isStatusUpdating={Boolean(updatingTicketIds[ticket.id])}
+              canEditStatus
+            />
           ))}
         </div>
-        <AdminTicketTable tickets={recentTickets} />
+        <AdminTicketTable
+          tickets={recentTickets}
+          canEditStatus
+          onStatusChange={handleStatusChange}
+          updatingTicketIds={updatingTicketIds}
+        />
       </section>
 
       <section className="space-y-3">
