@@ -46,9 +46,16 @@ function getInitials(name) {
 
 export default function Profile() {
   const navigate = useNavigate()
-  const { role } = useAuth()
+  const { role, user, isMockMode, logout } = useAuth()
 
-  const profile = PROFILES[role] ?? PROFILES.user
+  const profile = !isMockMode && user
+    ? {
+        name: user.full_name,
+        email: user.email,
+        role: user.role || 'user',
+        department: user.department ?? null,
+      }
+    : PROFILES[role] ?? PROFILES.user
 
   const [notificationsPush, setNotificationsPush] = useState(true)
   const [notificationsEmail, setNotificationsEmail] = useState(false)
@@ -175,7 +182,10 @@ export default function Profile() {
 
       <button
         type="button"
-        onClick={() => navigate('/login')}
+        onClick={() => {
+          logout()
+          navigate('/login')
+        }}
         className="mb-8 mt-6 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 text-sm font-semibold text-red-600 transition-all active:scale-[0.98] active:bg-red-100"
       >
         <LogOut size={18} />

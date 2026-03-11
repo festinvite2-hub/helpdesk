@@ -13,6 +13,7 @@ import {
   Inbox,
 } from 'lucide-react'
 import { Navigate, useLocation } from 'react-router-dom'
+import { useMocks } from '../api/client'
 
 export const AuthContext = createContext(null)
 
@@ -61,12 +62,34 @@ export const routeAccess = {
 }
 
 export function AuthProvider({ children }) {
-  const [role, setRole] = useState('user')
+  const isMockMode = useMocks()
+  const [mockRole, setMockRole] = useState('user')
+  const [realUser, setRealUser] = useState(() => {
+    try {
+      const stored = localStorage.getItem('helpdesk_user')
+      return stored ? JSON.parse(stored) : null
+    } catch {
+      return null
+    }
+  })
+
+  const role = isMockMode ? mockRole : realUser?.role || 'user'
+  const user = isMockMode
+    ? { id: 'mock', full_name: 'Demo User', email: 'demo@test.com', role: mockRole }
+    : realUser
 
   const value = useMemo(
     () => ({
       role,
-      setRole,
+      user,
+      isMockMode,
+      setRole: isMockMode ? setMockRole : () => {},
+      setUser: setRealUser,
+      logout: () => {
+        localStorage.removeItem('helpdesk_token')
+        localStorage.removeItem('helpdesk_user')
+        setRealUser(null)
+      },
       isAllowed(path) {
         const key = Object.keys(routeAccess).find((entry) => {
           if (!entry.includes(':')) return entry === path
@@ -78,7 +101,7 @@ export function AuthProvider({ children }) {
         return routeAccess[key].includes(role)
       },
     }),
-    [role],
+    [isMockMode, role, user],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
@@ -89,8 +112,12 @@ export function useAuth() {
 }
 
 export function RoleGuard({ children }) {
-  const { role, isAllowed } = useAuth()
+  const { role, isAllowed, isMockMode, user } = useAuth()
   const location = useLocation()
+
+  if (!isMockMode && !user) {
+    return <Navigate to="/login" replace />
+  }
 
   if (!isAllowed(location.pathname)) {
     const fallback = role === 'admin' ? '/admin/dashboard' : role === 'responsible' ? '/inbox' : '/dashboard'
