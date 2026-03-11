@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react'
+import { updateTicketStatus } from '../api/tickets'
+import { useAuth } from '../context/AuthContext'
 import { Inbox as InboxIcon } from 'lucide-react'
 import TicketCard from '../components/tickets/TicketCard'
 import InboxTable from '../components/tickets/InboxTable'
@@ -43,16 +45,22 @@ const FILTERS = [
 ]
 
 export default function Inbox() {
+  const { role, user } = useAuth()
+  const [tickets, setTickets] = useState(MOCK_INBOX_TICKETS)
   const [activeFilter, setActiveFilter] = useState(null)
+  const [statusError, setStatusError] = useState(null)
+  const [updatingTicketIds, setUpdatingTicketIds] = useState({})
 
-  const openCount = MOCK_INBOX_TICKETS.filter((ticket) => ticket.status === 'open').length
-  const inProgressCount = MOCK_INBOX_TICKETS.filter((ticket) => ticket.status === 'in_progress').length
-  const urgentCount = MOCK_INBOX_TICKETS.filter(
+  const canEditStatus = role === 'dept_manager' || role === 'admin'
+
+  const openCount = tickets.filter((ticket) => ticket.status === 'open').length
+  const inProgressCount = tickets.filter((ticket) => ticket.status === 'in_progress').length
+  const urgentCount = tickets.filter(
     (ticket) => ['critical', 'high'].includes(ticket.priority) && ticket.status === 'open'
   ).length
 
   const today = new Date()
-  const resolvedTodayCount = MOCK_INBOX_TICKETS.filter((ticket) => {
+  const resolvedTodayCount = tickets.filter((ticket) => {
     if (!ticket.resolved_at) {
       return false
     }
@@ -65,8 +73,8 @@ export default function Inbox() {
   }).length
 
   const filteredTickets = activeFilter
-    ? MOCK_INBOX_TICKETS.filter((ticket) => ticket.status === activeFilter)
-    : MOCK_INBOX_TICKETS
+    ? tickets.filter((ticket) => ticket.status === activeFilter)
+    : tickets
 
   const sortedTickets = [...filteredTickets].sort(
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
@@ -82,11 +90,34 @@ export default function Inbox() {
     []
   )
 
+
+  const handleStatusChange = async (ticketId, nextStatus) => {
+    if (!canEditStatus) return
+
+    setStatusError(null)
+    setUpdatingTicketIds((current) => ({ ...current, [ticketId]: true }))
+
+    try {
+      await updateTicketStatus({
+        ticketId,
+        newStatus: nextStatus,
+        userId: user?.id,
+      })
+
+      setTickets((current) =>
+        current.map((ticket) => (ticket.id === ticketId ? { ...ticket, status: nextStatus } : ticket))
+      )
+    } catch {
+      setStatusError('Nu am putut actualiza statusul ticketului.')
+    } finally {
+      setUpdatingTicketIds((current) => ({ ...current, [ticketId]: false }))
+    }
+  }
   const getFilterCount = (filterValue) => {
     if (!filterValue) {
-      return MOCK_INBOX_TICKETS.length
+      return tickets.length
     }
-    return MOCK_INBOX_TICKETS.filter((ticket) => ticket.status === filterValue).length
+    return tickets.filter((ticket) => ticket.status === filterValue).length
   }
 
   return (
@@ -96,6 +127,7 @@ export default function Inbox() {
         <p className="mt-1 text-sm text-slate-500">
           {openCount} tichete noi · {inProgressCount} în lucru
         </p>
+        {statusError && <p className="mt-2 text-sm text-red-600">{statusError}</p>}
       </header>
 
       <div className="rounded-lg bg-slate-50 px-3 py-2">
@@ -137,10 +169,22 @@ export default function Inbox() {
         <>
           <div className="flex flex-col gap-3 md:hidden">
             {sortedTickets.map((ticket) => (
-              <TicketCard key={ticket.id} ticket={ticket} showCreatedBy />
+              <TicketCard
+                key={ticket.id}
+                ticket={ticket}
+                showCreatedBy
+                onStatusChange={handleStatusChange}
+                isStatusUpdating={Boolean(updatingTicketIds[ticket.id])}
+                canEditStatus={canEditStatus}
+              />
             ))}
           </div>
-          <InboxTable tickets={sortedTickets} />
+          <InboxTable
+            tickets={sortedTickets}
+            canEditStatus={canEditStatus}
+            onStatusChange={handleStatusChange}
+            updatingTicketIds={updatingTicketIds}
+          />
         </>
       )}
     </section>

@@ -248,6 +248,7 @@ export default function MyTickets() {
                 showCreatedBy={role === 'dept_manager'}
                 onStatusChange={handleStatusChange}
                 isStatusUpdating={Boolean(updatingTicketIds[ticket.id])}
+                canEditStatus={false}
               />
             ))}
           </div>
@@ -255,6 +256,7 @@ export default function MyTickets() {
             tickets={filteredTickets}
             onStatusChange={handleStatusChange}
             updatingTicketIds={updatingTicketIds}
+            canEditStatus={false}
           />
         </>
       )}

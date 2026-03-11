@@ -117,7 +117,7 @@ export default function UserDashboard() {
                 <TicketCard key={ticket.id} ticket={ticket} />
               ))}
             </div>
-            <TicketTable tickets={sortedTickets} />
+            <TicketTable tickets={sortedTickets} canEditStatus={false} />
           </>
         )}
       </section>
