@@ -5,8 +5,6 @@ import LoadingSkeleton from '../components/common/LoadingSkeleton'
 import TicketCard from '../components/tickets/TicketCard'
 import TicketTable from '../components/tickets/TicketTable'
 import { getMyTickets } from '../api/tickets'
-import { useMocks } from '../api/client'
-import { MOCK_USER_TICKETS } from '../mocks/tickets'
 
 const statCards = [
   {
@@ -43,12 +41,8 @@ export default function UserDashboard() {
   useEffect(() => {
     async function loadTickets() {
       try {
-        if (useMocks()) {
-          setTickets(MOCK_USER_TICKETS)
-        } else {
-          const result = await getMyTickets('user')
-          setTickets(result.tickets || result)
-        }
+        const result = await getMyTickets('user')
+        setTickets(result?.tickets || [])
       } catch (err) {
         setError(err.message || 'Nu s-au putut încărca tichetele.')
       } finally {

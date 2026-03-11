@@ -5,9 +5,7 @@ import TicketCard from '../components/tickets/TicketCard'
 import TicketTable from '../components/tickets/TicketTable'
 import { useAuth } from '../context/AuthContext'
 import { getMyTickets, updateTicketStatus } from '../api/tickets'
-import { useMocks } from '../api/client'
 import LoadingSkeleton from '../components/common/LoadingSkeleton'
-import { MOCK_MY_TICKETS_RESPONSIBLE, MOCK_MY_TICKETS_USER } from '../mocks/tickets'
 import { timeAgo } from '../utils/timeAgo'
 
 const STATUS_FILTERS = [
@@ -69,12 +67,8 @@ export default function MyTickets() {
 
   const loadTickets = useCallback(async () => {
     try {
-      if (useMocks()) {
-        setAllTickets(role === 'dept_manager' ? MOCK_MY_TICKETS_RESPONSIBLE : MOCK_MY_TICKETS_USER)
-      } else {
-        const result = await getMyTickets(role)
-        setAllTickets(result?.tickets || [])
-      }
+      const result = await getMyTickets(role)
+      setAllTickets(result?.tickets || [])
       setError(null)
     } catch (err) {
       setError(err.message || 'Nu s-au putut încărca tichetele.')

@@ -1,10 +1,10 @@
-import { useMemo, useState } from 'react'
-import { updateTicketStatus } from '../api/tickets'
+import { useEffect, useMemo, useState } from 'react'
+import { getInboxTickets, updateTicketStatus } from '../api/tickets'
 import { useAuth } from '../context/AuthContext'
 import { Inbox as InboxIcon } from 'lucide-react'
 import TicketCard from '../components/tickets/TicketCard'
 import InboxTable from '../components/tickets/InboxTable'
-import { MOCK_INBOX_TICKETS } from '../mocks/tickets'
+import LoadingSkeleton from '../components/common/LoadingSkeleton'
 
 const FILTERS = [
   {
@@ -46,7 +46,9 @@ const FILTERS = [
 
 export default function Inbox() {
   const { role, user } = useAuth()
-  const [tickets, setTickets] = useState(MOCK_INBOX_TICKETS)
+  const [tickets, setTickets] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(null)
   const [activeFilter, setActiveFilter] = useState(null)
   const [statusError, setStatusError] = useState(null)
   const [updatingTicketIds, setUpdatingTicketIds] = useState({})
@@ -90,6 +92,23 @@ export default function Inbox() {
     []
   )
 
+  useEffect(() => {
+    async function loadTickets() {
+      try {
+        const result = await getInboxTickets()
+        const nextTickets = Array.isArray(result) ? result : result?.tickets
+        setTickets(Array.isArray(nextTickets) ? nextTickets : [])
+        setLoadError(null)
+      } catch (error) {
+        setLoadError(error.message || 'Nu s-au putut încărca tichetele primite.')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadTickets()
+  }, [])
+
 
   const handleStatusChange = async (ticketId, nextStatus) => {
     if (!canEditStatus) return
@@ -120,6 +139,9 @@ export default function Inbox() {
     return tickets.filter((ticket) => ticket.status === filterValue).length
   }
 
+  if (loading) return <LoadingSkeleton />
+  if (loadError) return <p className="text-red-600">{loadError}</p>
+
   return (
     <section className="space-y-4">
       <header>
@@ -133,8 +155,7 @@ export default function Inbox() {
       <div className="rounded-lg bg-slate-50 px-3 py-2">
         <div className="flex justify-between gap-2">
           <p className="text-xs text-slate-500">🔴 {urgentCount} urgente</p>
-          <p className="text-xs text-slate-500">⏱ ~3h timp mediu</p>
-          <p className="text-xs text-slate-500">✅ {resolvedTodayCount || 1} azi</p>
+          <p className="text-xs text-slate-500">✅ {resolvedTodayCount} azi</p>
         </div>
       </div>
 
@@ -162,7 +183,9 @@ export default function Inbox() {
         <div className="flex min-h-[280px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-white px-6 py-8 text-center">
           <InboxIcon size={40} className="text-slate-300" />
           <p className="mt-3 text-sm font-medium text-slate-600">
-            Niciun tichet cu statusul «{filterLabels[activeFilter] ?? 'Toate'}»
+            {activeFilter
+              ? `Niciun tichet cu statusul «${filterLabels[activeFilter] ?? 'Toate'}»`
+              : 'Nu există tichete primite disponibile.'}
           </p>
         </div>
       ) : (
