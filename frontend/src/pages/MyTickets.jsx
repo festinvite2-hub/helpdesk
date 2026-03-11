@@ -54,7 +54,7 @@ const STATUS_FILTERS = [
 
 export default function MyTickets() {
   const { role } = useAuth()
-  const allTickets = role === 'responsible' ? MOCK_MY_TICKETS_RESPONSIBLE : MOCK_MY_TICKETS_USER
+  const allTickets = role === 'dept_manager' ? MOCK_MY_TICKETS_RESPONSIBLE : MOCK_MY_TICKETS_USER
 
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState(null)
@@ -99,7 +99,7 @@ export default function MyTickets() {
 
   const hasTickets = allTickets.length > 0
   const subtitle =
-    role === 'responsible' ? `${counts.total} tichete gestionate de tine` : `${counts.total} tichete create de tine`
+    role === 'dept_manager' ? `${counts.total} tichete gestionate de tine` : `${counts.total} tichete create de tine`
 
   const newestUpdate = useMemo(() => {
     if (!hasTickets) return null
@@ -171,7 +171,7 @@ export default function MyTickets() {
         <div className="flex min-h-[300px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-white px-6 py-8 text-center">
           <ClipboardList size={40} className="text-slate-300" />
           <p className="mt-3 text-sm font-medium text-slate-700">
-            {role === 'responsible' ? 'Niciun tichet asignat' : 'Nu ai niciun tichet'}
+            {role === 'dept_manager' ? 'Niciun tichet asignat' : 'Nu ai niciun tichet'}
           </p>
           {role === 'user' && (
             <Link
@@ -193,7 +193,7 @@ export default function MyTickets() {
         <>
           <div className="flex flex-col gap-3 md:hidden">
             {filteredTickets.map((ticket) => (
-              <TicketCard key={ticket.id} ticket={ticket} showCreatedBy={role === 'responsible'} />
+              <TicketCard key={ticket.id} ticket={ticket} showCreatedBy={role === 'dept_manager'} />
             ))}
           </div>
           <TicketTable tickets={filteredTickets} />

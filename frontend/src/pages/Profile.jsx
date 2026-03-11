@@ -6,10 +6,10 @@ import { ROLE_LABELS, useAuth } from '../context/AuthContext'
 
 const PROFILES = {
   user: { name: 'Maria Popescu', email: 'maria.popescu@scoala.local', role: 'user', department: null },
-  responsible: {
+  dept_manager: {
     name: 'Andrei Tecuci',
     email: 'andrei.tecuci@scoala.local',
-    role: 'responsible',
+    role: 'dept_manager',
     department: { name: 'IT', color: '#3B82F6' },
   },
   admin: { name: 'Administrator Sistem', email: 'admin@helpdesk.local', role: 'admin', department: null },
@@ -17,7 +17,7 @@ const PROFILES = {
 
 const ROLE_BADGE_CLASSES = {
   user: 'bg-slate-100 text-slate-700',
-  responsible: 'bg-blue-100 text-blue-700',
+  dept_manager: 'bg-blue-100 text-blue-700',
   admin: 'bg-purple-100 text-purple-700',
 }
 
@@ -27,7 +27,7 @@ const STATS_BY_ROLE = {
     { label: 'Rezolvate', value: '3' },
     { label: 'Timp mediu rezolvare', value: '~8h' },
   ],
-  responsible: [
+  dept_manager: [
     { label: 'Tichete gestionate', value: '8' },
     { label: 'Rezolvate', value: '5' },
     { label: 'Timp mediu rezolvare', value: '~4h' },
@@ -101,7 +101,7 @@ export default function Profile() {
               {ROLE_LABELS[profile.role]}
             </span>
           </div>
-          {profile.role === 'responsible' && (
+          {profile.role === 'dept_manager' && (
             <div className="flex min-h-[44px] items-center justify-between gap-4">
               <span className="text-sm text-slate-500">Departament</span>
               {profile.department ? (

@@ -1,4 +1,4 @@
-import { roleLinks, useAuth } from '../../context/AuthContext'
+import { ROLE_LABELS, roleLinks, useAuth } from '../../context/AuthContext'
 import Brand from './Brand'
 import Navigation from './Navigation'
 import RolePicker from './RolePicker'
@@ -17,6 +17,7 @@ export default function Sidebar() {
           <div className="rounded-xl border border-slate-200 px-3 py-2 text-sm">
             <p className="font-medium text-slate-900">{user.full_name}</p>
             <p className="text-xs text-slate-500">{user.email}</p>
+            <p className="text-xs font-semibold text-slate-600">{ROLE_LABELS[user.role]}</p>
           </div>
         ) : null}
       </div>

@@ -25,7 +25,7 @@ export default function BottomNav() {
       { label: 'Asistent', icon: Bot, to: '/assistant' },
       { label: 'Profil', icon: User, to: '/profile' },
     ],
-    responsible: [
+    dept_manager: [
       { label: 'Primite', icon: Inbox, to: '/inbox' },
       { label: 'Tickete', icon: ClipboardList, to: '/my-tickets' },
       { label: 'Profil', icon: User, to: '/profile' },
@@ -43,7 +43,7 @@ export default function BottomNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white shadow-[0_-1px_3px_rgba(0,0,0,0.05)] md:hidden pb-[env(safe-area-inset-bottom)]">
-      <ul className={`grid h-16 ${role === 'responsible' ? 'grid-cols-3' : 'grid-cols-5'}`}>
+      <ul className={`grid h-16 ${role === 'dept_manager' ? 'grid-cols-3' : 'grid-cols-5'}`}>
         {tabs.map(({ label, icon: Icon, to, isCenter }) => {
           const isActive = pathname === to || (!isCenter && pathname.startsWith(`${to}/`))
 

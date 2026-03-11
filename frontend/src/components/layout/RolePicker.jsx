@@ -1,6 +1,6 @@
 import { ROLE_LABELS } from '../../context/AuthContext'
 
-const ROLE_OPTIONS = ['user', 'responsible', 'admin']
+const ROLE_OPTIONS = ['user', 'dept_manager', 'admin']
 
 export default function RolePicker({ role, onRoleChange, compact = false }) {
   if (compact) {

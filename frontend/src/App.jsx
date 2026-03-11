@@ -2,7 +2,7 @@ import { lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import LoadingSkeleton from './components/common/LoadingSkeleton'
 import AppLayout from './components/layout/AppLayout'
-import { AuthProvider, RoleGuard, useAuth } from './context/AuthContext'
+import { AuthProvider, RoleGuard, getHomeRouteByRole, useAuth } from './context/AuthContext'
 
 const Login = lazy(() => import('./pages/Login'))
 const UserDashboard = lazy(() => import('./pages/UserDashboard'))
@@ -21,9 +21,8 @@ const AdminUsers = lazy(() => import('./pages/AdminUsers'))
 
 function RoleRedirect() {
   const { role } = useAuth()
-  const fallback = role === 'admin' ? '/admin/dashboard' : role === 'responsible' ? '/inbox' : '/dashboard'
 
-  return <Navigate to={fallback} replace />
+  return <Navigate to={getHomeRouteByRole(role)} replace />
 }
 
 function RoutesConfig() {
