@@ -1,9 +1,12 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ArrowUpDown, ClipboardList, PlusCircle, Search } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import TicketCard from '../components/tickets/TicketCard'
 import TicketTable from '../components/tickets/TicketTable'
 import { useAuth } from '../context/AuthContext'
+import { getMyTickets } from '../api/tickets'
+import { useMocks } from '../api/client'
+import LoadingSkeleton from '../components/common/LoadingSkeleton'
 import { MOCK_MY_TICKETS_RESPONSIBLE, MOCK_MY_TICKETS_USER } from '../mocks/tickets'
 import { timeAgo } from '../utils/timeAgo'
 
@@ -54,11 +57,33 @@ const STATUS_FILTERS = [
 
 export default function MyTickets() {
   const { role } = useAuth()
-  const allTickets = role === 'dept_manager' ? MOCK_MY_TICKETS_RESPONSIBLE : MOCK_MY_TICKETS_USER
+  const [allTickets, setAllTickets] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState(null)
   const [sortDir, setSortDir] = useState('desc')
+
+
+  useEffect(() => {
+    async function loadTickets() {
+      try {
+        if (useMocks()) {
+          setAllTickets(role === 'dept_manager' ? MOCK_MY_TICKETS_RESPONSIBLE : MOCK_MY_TICKETS_USER)
+        } else {
+          const result = await getMyTickets(role)
+          setAllTickets(result?.tickets || [])
+        }
+      } catch (err) {
+        setError(err.message || 'Nu s-au putut încărca tichetele.')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadTickets()
+  }, [role])
 
   const counts = useMemo(() => {
     const openCount = allTickets.filter((ticket) => ['open', 'in_progress', 'waiting'].includes(ticket.status)).length
@@ -106,6 +131,9 @@ export default function MyTickets() {
     const [ticket] = [...allTickets].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))
     return ticket ? timeAgo(ticket.updated_at) : null
   }, [allTickets, hasTickets])
+
+  if (loading) return <LoadingSkeleton />
+  if (error) return <p className="text-red-600">{error}</p>
 
   return (
     <section className="space-y-4">
