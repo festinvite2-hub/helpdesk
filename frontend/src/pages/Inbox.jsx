@@ -44,6 +44,27 @@ const FILTERS = [
   },
 ]
 
+function mapInboxTicket(rawTicket) {
+  if (!rawTicket || typeof rawTicket !== 'object') return null
+
+  const id = rawTicket.id ?? rawTicket.ticket_id
+  if (!id) return null
+
+  return {
+    ...rawTicket,
+    id,
+    ticket_number: rawTicket.ticket_number ?? rawTicket.ticketNumber ?? String(id),
+    title: rawTicket.title ?? rawTicket.subject ?? `Tichet #${id}`,
+    status: rawTicket.status ?? 'open',
+    priority: rawTicket.priority ?? 'medium',
+    created_at: rawTicket.created_at ?? rawTicket.createdAt ?? new Date().toISOString(),
+    created_by:
+      rawTicket.created_by ?? rawTicket.created_by_name ?? rawTicket.requester_name ?? 'Necunoscut',
+    department: rawTicket.department ?? rawTicket.department_name ?? 'Nespecificat',
+    category: rawTicket.category ?? rawTicket.topic ?? 'General',
+  }
+}
+
 export default function Inbox() {
   const { role, user } = useAuth()
   const [tickets, setTickets] = useState([])
@@ -95,9 +116,13 @@ export default function Inbox() {
   useEffect(() => {
     async function loadTickets() {
       try {
-        const result = await getInboxTickets()
+        const currentUserId = user?.id ?? user?.user_id
+        const result = await getInboxTickets(currentUserId)
         const nextTickets = Array.isArray(result) ? result : result?.tickets
-        setTickets(Array.isArray(nextTickets) ? nextTickets : [])
+        const mappedTickets = Array.isArray(nextTickets)
+          ? nextTickets.map(mapInboxTicket).filter(Boolean)
+          : []
+        setTickets(mappedTickets)
         setLoadError(null)
       } catch (error) {
         setLoadError(error.message || 'Nu s-au putut încărca tichetele primite.')
@@ -107,7 +132,7 @@ export default function Inbox() {
     }
 
     loadTickets()
-  }, [])
+  }, [user?.id, user?.user_id])
 
 
   const handleStatusChange = async (ticketId, nextStatus) => {
@@ -139,7 +164,14 @@ export default function Inbox() {
     return tickets.filter((ticket) => ticket.status === filterValue).length
   }
 
-  if (loading) return <LoadingSkeleton />
+  if (loading) {
+    return (
+      <div className="space-y-3">
+        <p className="text-sm text-slate-500">Se încarcă tichetele primite...</p>
+        <LoadingSkeleton />
+      </div>
+    )
+  }
   if (loadError) return <p className="text-red-600">{loadError}</p>
 
   return (

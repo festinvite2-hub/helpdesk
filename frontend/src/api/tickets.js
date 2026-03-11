@@ -2,7 +2,6 @@ import { api, useMocks } from './client';
 import {
   MOCK_MY_TICKETS_USER,
   MOCK_MY_TICKETS_RESPONSIBLE,
-  MOCK_INBOX_TICKETS,
   MOCK_ALL_TICKETS,
 } from '../mocks/tickets';
 import { MOCK_TICKET_DETAIL, MOCK_MESSAGES } from '../mocks/ticketDetail';
@@ -53,12 +52,13 @@ export async function getMyTickets(role) {
   };
 }
 
-export async function getInboxTickets() {
-  if (useMocks()) {
-    return MOCK_INBOX_TICKETS;
+export async function getInboxTickets(userId) {
+  if (!userId) {
+    return { success: true, tickets: [] };
   }
 
-  return api.get('/inbox-tickets');
+  const query = new URLSearchParams({ user_id: String(userId) }).toString();
+  return api.get(`/inbox-tickets?${query}`);
 }
 
 export async function getAllTickets() {
