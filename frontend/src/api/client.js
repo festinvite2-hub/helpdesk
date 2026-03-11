@@ -17,18 +17,29 @@ export class ApiError extends Error {
 export async function apiRequest(endpoint, options = {}) {
   const url = `${API_BASE}${endpoint}`;
   const { skipAuth = false, ...requestOptions } = options;
+  const method = (requestOptions.method || 'GET').toUpperCase();
+  const hasJsonBody = ['POST', 'PUT', 'PATCH'].includes(method) && requestOptions.body != null;
+  const isPublicWebhookGet = method === 'GET' && ['/all-tickets', '/departments'].includes(endpoint);
 
   const config = {
-    headers: {
-      'Content-Type': 'application/json',
-      ...requestOptions.headers,
-    },
+    method,
     ...requestOptions,
+    headers: {
+      ...(requestOptions.headers || {}),
+    },
   };
 
+  if (hasJsonBody && !config.headers['Content-Type']) {
+    config.headers['Content-Type'] = 'application/json';
+  }
+
   const token = localStorage.getItem('helpdesk_token');
-  if (!skipAuth && token) {
+  if (!skipAuth && !isPublicWebhookGet && token) {
     config.headers.Authorization = `Bearer ${token}`;
+  }
+
+  if (Object.keys(config.headers).length === 0) {
+    delete config.headers;
   }
 
   try {
