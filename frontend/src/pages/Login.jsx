@@ -1,8 +1,60 @@
-import { Bot, Lock, Mail } from 'lucide-react'
+import { useState } from 'react'
+import { Bot, Lock, Mail, Loader2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { login, saveToken } from '../api/auth'
+import { useMocks } from '../api/client'
 
 export default function Login() {
   const navigate = useNavigate()
+  const isMockMode = useMocks()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+
+  const handleSubmit = async () => {
+    setError('')
+
+    if (isMockMode) {
+      navigate('/dashboard')
+      return
+    }
+
+    if (!email.trim()) {
+      setError('Introdu adresa de email.')
+      return
+    }
+
+    if (!password) {
+      setError('Introdu parola.')
+      return
+    }
+
+    setIsLoading(true)
+
+    try {
+      const result = await login(email, password)
+
+      if (result?.token && result?.user) {
+        saveToken(result.token)
+        localStorage.setItem('helpdesk_user', JSON.stringify(result.user))
+
+        if (result.user.role === 'admin') {
+          navigate('/admin/dashboard')
+        } else if (result.user.role === 'responsible') {
+          navigate('/inbox')
+        } else {
+          navigate('/dashboard')
+        }
+      } else {
+        setError(result?.error || 'Email sau parolă incorectă.')
+      }
+    } catch (err) {
+      setError(err.message || 'Nu s-a putut contacta serverul.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 flex flex-col items-center justify-center p-6">
@@ -20,6 +72,8 @@ export default function Login() {
           <input
             type="email"
             placeholder="Email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
             className="w-full min-h-[48px] px-4 py-3 pl-10 text-base border border-slate-300 rounded-xl"
           />
         </div>
@@ -29,6 +83,13 @@ export default function Login() {
           <input
             type="password"
             placeholder="Parolă"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                handleSubmit()
+              }
+            }}
             className="w-full min-h-[48px] px-4 py-3 pl-10 text-base border border-slate-300 rounded-xl"
           />
         </div>
@@ -39,15 +100,27 @@ export default function Login() {
         </label>
 
         <button
-          onClick={() => navigate('/dashboard')}
-          className="w-full min-h-[48px] rounded-xl bg-blue-600 text-white font-semibold active:bg-blue-700 active:scale-[0.98] transition-all"
+          onClick={handleSubmit}
+          disabled={isLoading}
+          className="w-full min-h-[48px] rounded-xl bg-blue-600 text-white font-semibold flex items-center justify-center gap-2 active:bg-blue-700 active:scale-[0.98] transition-all disabled:bg-blue-300"
         >
-          Autentificare
+          {isLoading ? (
+            <>
+              <Loader2 size={18} className="animate-spin" />
+              Se autentifică...
+            </>
+          ) : (
+            'Autentificare'
+          )}
         </button>
 
-        <p className="text-xs text-slate-400 text-center mt-4">
-          Aceasta este o versiune demonstrativă. Apasă Autentificare pentru a continua.
-        </p>
+        {error && (
+          <p className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600 mt-3">{error}</p>
+        )}
+
+        {isMockMode && (
+          <p className="text-xs text-slate-400 text-center mt-4">Versiune demonstrativă. Apasă Autentificare pentru a continua.</p>
+        )}
       </section>
     </main>
   )

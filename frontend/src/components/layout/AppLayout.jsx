@@ -9,7 +9,7 @@ import BottomNav from './BottomNav'
 import Sidebar from './Sidebar'
 
 export default function AppLayout() {
-  const { role, setRole } = useAuth()
+  const { role, setRole, isMockMode, user } = useAuth()
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -24,7 +24,14 @@ export default function AppLayout() {
               </div>
 
               <div className="md:hidden">
-                <RolePicker role={role} onRoleChange={setRole} compact />
+                {isMockMode ? (
+                  <RolePicker role={role} onRoleChange={setRole} compact />
+                ) : user ? (
+                  <div className="px-3 py-2 text-right text-sm">
+                    <p className="font-medium text-slate-900">{user.full_name}</p>
+                    <p className="text-xs text-slate-500">{user.email}</p>
+                  </div>
+                ) : null}
               </div>
 
               <div className="hidden md:ml-auto md:block">
