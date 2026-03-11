@@ -37,10 +37,20 @@ export async function createTicket(payload) {
 
 export async function getMyTickets(role) {
   if (useMocks()) {
-    return role === 'dept_manager' || role === 'responsible' ? MOCK_MY_TICKETS_RESPONSIBLE : MOCK_MY_TICKETS_USER;
+    const tickets = role === 'dept_manager' || role === 'responsible' ? MOCK_MY_TICKETS_RESPONSIBLE : MOCK_MY_TICKETS_USER;
+    return { success: true, tickets };
   }
 
-  return api.get('/my-tickets');
+  const result = await api.get('/my-tickets', { skipAuth: true });
+
+  if (Array.isArray(result)) {
+    return { success: true, tickets: result };
+  }
+
+  return {
+    success: result?.success ?? true,
+    tickets: result?.tickets ?? [],
+  };
 }
 
 export async function getInboxTickets() {

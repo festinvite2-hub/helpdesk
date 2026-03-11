@@ -16,17 +16,18 @@ export class ApiError extends Error {
 
 export async function apiRequest(endpoint, options = {}) {
   const url = `${API_BASE}${endpoint}`;
+  const { skipAuth = false, ...requestOptions } = options;
 
   const config = {
     headers: {
       'Content-Type': 'application/json',
-      ...options.headers,
+      ...requestOptions.headers,
     },
-    ...options,
+    ...requestOptions,
   };
 
   const token = localStorage.getItem('helpdesk_token');
-  if (token) {
+  if (!skipAuth && token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
 
@@ -57,17 +58,19 @@ export async function apiRequest(endpoint, options = {}) {
 }
 
 export const api = {
-  get: (endpoint) => apiRequest(endpoint, { method: 'GET' }),
+  get: (endpoint, options = {}) => apiRequest(endpoint, { method: 'GET', ...options }),
 
-  post: (endpoint, body) => apiRequest(endpoint, {
+  post: (endpoint, body, options = {}) => apiRequest(endpoint, {
     method: 'POST',
     body: JSON.stringify(body),
+    ...options,
   }),
 
-  put: (endpoint, body) => apiRequest(endpoint, {
+  put: (endpoint, body, options = {}) => apiRequest(endpoint, {
     method: 'PUT',
     body: JSON.stringify(body),
+    ...options,
   }),
 
-  delete: (endpoint) => apiRequest(endpoint, { method: 'DELETE' }),
+  delete: (endpoint, options = {}) => apiRequest(endpoint, { method: 'DELETE', ...options }),
 };
