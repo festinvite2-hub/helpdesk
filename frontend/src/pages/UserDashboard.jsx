@@ -1,7 +1,11 @@
+import { useEffect, useState } from 'react'
 import { ClipboardList } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import LoadingSkeleton from '../components/common/LoadingSkeleton'
 import TicketCard from '../components/tickets/TicketCard'
 import TicketTable from '../components/tickets/TicketTable'
+import { getMyTickets } from '../api/tickets'
+import { useMocks } from '../api/client'
 import { MOCK_USER_TICKETS } from '../mocks/tickets'
 
 const statCards = [
@@ -32,12 +36,38 @@ const statCards = [
 ]
 
 export default function UserDashboard() {
-  const tickets = [...MOCK_USER_TICKETS].sort(
+  const [tickets, setTickets] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    async function loadTickets() {
+      try {
+        if (useMocks()) {
+          setTickets(MOCK_USER_TICKETS)
+        } else {
+          const result = await getMyTickets('user')
+          setTickets(result.tickets || result)
+        }
+      } catch (err) {
+        setError(err.message || 'Nu s-au putut încărca tichetele.')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadTickets()
+  }, [])
+
+  const sortedTickets = [...tickets].sort(
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   )
   const activeTicketsCount = tickets.filter(
     (ticket) => ticket.status !== 'resolved' && ticket.status !== 'closed'
   ).length
+
+  if (loading) return <LoadingSkeleton />
+  if (error) return <p className="text-red-600">{error}</p>
 
   return (
     <section className="space-y-6">
@@ -52,7 +82,7 @@ export default function UserDashboard() {
             key={stat.key}
             className={`rounded-xl border border-l-4 border-slate-200 p-3 shadow-sm ${stat.className}`}
           >
-            <p className="text-2xl font-bold">{stat.count(tickets)}</p>
+            <p className="text-2xl font-bold">{stat.count(sortedTickets)}</p>
             <p className="mt-0.5 text-xs text-slate-500">{stat.label}</p>
           </article>
         ))}
@@ -69,7 +99,7 @@ export default function UserDashboard() {
           </Link>
         </div>
 
-        {tickets.length === 0 ? (
+        {sortedTickets.length === 0 ? (
           <div className="flex min-h-[320px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-white p-6 text-center">
             <ClipboardList size={48} className="text-slate-300" />
             <p className="mt-4 text-sm font-medium text-slate-700">Nu ai niciun tichet încă</p>
@@ -83,11 +113,11 @@ export default function UserDashboard() {
         ) : (
           <>
             <div className="flex flex-col gap-3 md:hidden">
-              {tickets.map((ticket) => (
+              {sortedTickets.map((ticket) => (
                 <TicketCard key={ticket.id} ticket={ticket} />
               ))}
             </div>
-            <TicketTable tickets={tickets} />
+            <TicketTable tickets={sortedTickets} />
           </>
         )}
       </section>

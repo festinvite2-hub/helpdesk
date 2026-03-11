@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { CheckCircle2, ChevronDown, Info, Loader2 } from 'lucide-react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { createTicketMock } from '../api/tickets'
+import { createTicket } from '../api/tickets'
 import { CATEGORY_OPTIONS, PRIORITY_OPTIONS } from '../config/constants'
 import { useAuth } from '../context/AuthContext'
 import { MOCK_DEPARTMENTS } from '../mocks/tickets'
@@ -57,14 +57,28 @@ export default function TicketNew() {
 
     setIsSubmitting(true)
     setSuccessMessage('')
+    setErrors((current) => ({ ...current, submit: '' }))
 
-    const result = await createTicketMock(formData)
+    try {
+      const result = await createTicket({
+        title: formData.title,
+        description: formData.description,
+        category: formData.category,
+        priority: formData.priority,
+        department_id: formData.department || null,
+        user_id: null,
+      })
 
-    if (result.success) {
-      setSuccessMessage(`Tichetul ${result.ticket_id} a fost creat cu succes. Redirecționare către panoul principal...`)
-      setTimeout(() => {
-        navigate('/dashboard')
-      }, 1200)
+      if (result.success) {
+        setSuccessMessage(`Tichetul ${result.ticket?.ticket_number || ''} a fost creat cu succes.`)
+        setTimeout(() => {
+          navigate('/dashboard')
+        }, 1200)
+      } else {
+        setErrors({ submit: result.error || 'Eroare la crearea tichetului.' })
+      }
+    } catch (err) {
+      setErrors({ submit: err.message || 'Nu s-a putut contacta serverul.' })
     }
 
     setIsSubmitting(false)
@@ -257,6 +271,12 @@ export default function TicketNew() {
               <span>{successMessage}</span>
             </div>
           </div>
+        )}
+
+        {errors.submit && (
+          <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {errors.submit}
+          </p>
         )}
 
         <div className="fixed bottom-20 left-0 right-0 bg-gradient-to-t from-white via-white to-transparent px-4 pb-2 pt-4 md:static md:bg-none md:px-0 md:pb-0 md:pt-2">
