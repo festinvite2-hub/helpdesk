@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { Bot, Lock, Mail, Loader2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { login, saveToken } from '../api/auth'
+import { login } from '../api/auth'
 import { useMocks } from '../api/client'
+import { getHomeRouteByRole, normalizeRole, useAuth } from '../context/AuthContext'
 
 export default function Login() {
   const navigate = useNavigate()
+  const { setAuthSession } = useAuth()
   const isMockMode = useMocks()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -36,16 +38,9 @@ export default function Login() {
       const result = await login(email, password)
 
       if (result?.token && result?.user) {
-        saveToken(result.token)
-        localStorage.setItem('helpdesk_user', JSON.stringify(result.user))
-
-        if (result.user.role === 'admin') {
-          navigate('/admin/dashboard')
-        } else if (result.user.role === 'responsible') {
-          navigate('/inbox')
-        } else {
-          navigate('/dashboard')
-        }
+        const normalizedRole = normalizeRole(result.user.role)
+        setAuthSession(result.token, { ...result.user, role: normalizedRole })
+        navigate(getHomeRouteByRole(normalizedRole))
       } else {
         setError(result?.error || 'Email sau parolă incorectă.')
       }

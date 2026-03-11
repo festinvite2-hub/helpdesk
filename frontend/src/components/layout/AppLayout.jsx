@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import { Outlet } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
+import { ROLE_LABELS, useAuth } from '../../context/AuthContext'
 import LoadingSkeleton from '../common/LoadingSkeleton'
 import Brand from './Brand'
 import RoleBadge from './RoleBadge'
@@ -30,6 +30,7 @@ export default function AppLayout() {
                   <div className="px-3 py-2 text-right text-sm">
                     <p className="font-medium text-slate-900">{user.full_name}</p>
                     <p className="text-xs text-slate-500">{user.email}</p>
+                    <p className="text-xs font-semibold text-slate-600">{ROLE_LABELS[user.role]}</p>
                   </div>
                 ) : null}
               </div>

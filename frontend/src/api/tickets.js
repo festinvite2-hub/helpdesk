@@ -37,7 +37,7 @@ export async function createTicket(payload) {
 
 export async function getMyTickets(role) {
   if (useMocks()) {
-    return role === 'responsible' ? MOCK_MY_TICKETS_RESPONSIBLE : MOCK_MY_TICKETS_USER;
+    return role === 'dept_manager' || role === 'responsible' ? MOCK_MY_TICKETS_RESPONSIBLE : MOCK_MY_TICKETS_USER;
   }
 
   return api.get('/my-tickets');

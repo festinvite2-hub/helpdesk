@@ -17,8 +17,21 @@ import { useMocks } from '../api/client'
 
 export const AuthContext = createContext(null)
 
+export function normalizeRole(role) {
+  if (role === 'responsible') return 'dept_manager'
+  if (role === 'dept_manager' || role === 'admin' || role === 'user') return role
+  return 'user'
+}
+
+export function getHomeRouteByRole(role) {
+  if (role === 'admin') return '/admin/dashboard'
+  if (role === 'dept_manager') return '/inbox'
+  return '/dashboard'
+}
+
 export const ROLE_LABELS = {
   user: 'Utilizator',
+  dept_manager: 'Responsabil',
   responsible: 'Responsabil',
   admin: 'Administrator',
 }
@@ -31,7 +44,7 @@ export const roleLinks = {
     { to: '/assistant', label: 'Asistent AI', icon: Bot },
     { to: '/profile', label: 'Profil', icon: User },
   ],
-  responsible: [
+  dept_manager: [
     { to: '/inbox', label: 'Tichete primite', icon: Inbox },
     { to: '/my-tickets', label: 'Ticketele mele', icon: ClipboardList },
     { to: '/profile', label: 'Profil', icon: User },
@@ -49,11 +62,11 @@ export const roleLinks = {
 export const routeAccess = {
   '/dashboard': ['user'],
   '/tickets/new': ['user', 'admin'],
-  '/tickets/:id': ['user', 'responsible', 'admin'],
-  '/my-tickets': ['user', 'responsible'],
+  '/tickets/:id': ['user', 'dept_manager', 'admin'],
+  '/my-tickets': ['user', 'dept_manager'],
   '/assistant': ['user'],
-  '/profile': ['user', 'responsible'],
-  '/inbox': ['responsible', 'admin'],
+  '/profile': ['user', 'dept_manager'],
+  '/inbox': ['dept_manager', 'admin'],
   '/admin/dashboard': ['admin'],
   '/admin/departments': ['admin'],
   '/admin/routing-rules': ['admin'],
@@ -64,6 +77,7 @@ export const routeAccess = {
 export function AuthProvider({ children }) {
   const isMockMode = useMocks()
   const [mockRole, setMockRole] = useState('user')
+  const [token, setToken] = useState(() => localStorage.getItem('helpdesk_token'))
   const [realUser, setRealUser] = useState(() => {
     try {
       const stored = localStorage.getItem('helpdesk_user')
@@ -73,21 +87,51 @@ export function AuthProvider({ children }) {
     }
   })
 
-  const role = isMockMode ? mockRole : realUser?.role || 'user'
+  const role = isMockMode ? mockRole : normalizeRole(realUser?.role)
   const user = isMockMode
-    ? { id: 'mock', full_name: 'Demo User', email: 'demo@test.com', role: mockRole }
+    ? { id: 'mock', full_name: 'Demo User', email: 'demo@test.com', role: normalizeRole(mockRole) }
     : realUser
+      ? { ...realUser, role }
+      : null
 
   const value = useMemo(
     () => ({
       role,
+      token,
       user,
       isMockMode,
       setRole: isMockMode ? setMockRole : () => {},
-      setUser: setRealUser,
+      setUser: (nextUser) => {
+        const normalizedUser = nextUser ? { ...nextUser, role: normalizeRole(nextUser.role) } : null
+        setRealUser(normalizedUser)
+
+        if (normalizedUser) {
+          localStorage.setItem('helpdesk_user', JSON.stringify(normalizedUser))
+        } else {
+          localStorage.removeItem('helpdesk_user')
+        }
+      },
+      setAuthSession: (nextToken, nextUser) => {
+        const normalizedUser = nextUser ? { ...nextUser, role: normalizeRole(nextUser.role) } : null
+        setToken(nextToken || null)
+        setRealUser(normalizedUser)
+
+        if (nextToken) {
+          localStorage.setItem('helpdesk_token', nextToken)
+        } else {
+          localStorage.removeItem('helpdesk_token')
+        }
+
+        if (normalizedUser) {
+          localStorage.setItem('helpdesk_user', JSON.stringify(normalizedUser))
+        } else {
+          localStorage.removeItem('helpdesk_user')
+        }
+      },
       logout: () => {
         localStorage.removeItem('helpdesk_token')
         localStorage.removeItem('helpdesk_user')
+        setToken(null)
         setRealUser(null)
       },
       isAllowed(path) {
@@ -101,7 +145,7 @@ export function AuthProvider({ children }) {
         return routeAccess[key].includes(role)
       },
     }),
-    [isMockMode, role, user],
+    [isMockMode, role, token, user],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
@@ -112,16 +156,15 @@ export function useAuth() {
 }
 
 export function RoleGuard({ children }) {
-  const { role, isAllowed, isMockMode, user } = useAuth()
+  const { token, isAllowed, isMockMode, user } = useAuth()
   const location = useLocation()
 
-  if (!isMockMode && !user) {
+  if (!isMockMode && (!token || !user)) {
     return <Navigate to="/login" replace />
   }
 
   if (!isAllowed(location.pathname)) {
-    const fallback = role === 'admin' ? '/admin/dashboard' : role === 'responsible' ? '/inbox' : '/dashboard'
-    return <Navigate to={fallback} replace />
+    return <Navigate to={getHomeRouteByRole(normalizeRole(user?.role))} replace />
   }
 
   return children
