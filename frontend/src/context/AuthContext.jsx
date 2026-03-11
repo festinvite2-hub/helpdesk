@@ -46,7 +46,6 @@ export const roleLinks = {
   ],
   dept_manager: [
     { to: '/inbox', label: 'Tichete primite', icon: Inbox },
-    { to: '/my-tickets', label: 'Ticketele mele', icon: ClipboardList },
     { to: '/profile', label: 'Profil', icon: User },
   ],
   admin: [
@@ -63,7 +62,7 @@ export const routeAccess = {
   '/dashboard': ['user'],
   '/tickets/new': ['user', 'admin'],
   '/tickets/:id': ['user', 'dept_manager', 'admin'],
-  '/my-tickets': ['user', 'dept_manager'],
+  '/my-tickets': ['user'],
   '/assistant': ['user'],
   '/profile': ['user', 'dept_manager'],
   '/inbox': ['dept_manager', 'admin'],
