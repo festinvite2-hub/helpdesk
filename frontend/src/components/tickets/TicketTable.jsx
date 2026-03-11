@@ -17,8 +17,16 @@ const statusMap = {
   closed: { label: 'închis', className: 'bg-slate-100 text-slate-600' },
 }
 
-export default function TicketTable({ tickets }) {
+export default function TicketTable({ tickets, onStatusChange, updatingTicketIds }) {
   const navigate = useNavigate()
+
+  const statusOptions = [
+    { value: 'open', label: 'Deschis' },
+    { value: 'in_progress', label: 'În lucru' },
+    { value: 'waiting', label: 'Așteptare' },
+    { value: 'resolved', label: 'Rezolvat' },
+    { value: 'closed', label: 'Închis' },
+  ]
 
   return (
     <div className="hidden overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm md:block">
@@ -54,9 +62,28 @@ export default function TicketTable({ tickets }) {
                   </span>
                 </td>
                 <td className="px-4 py-3">
-                  <span className={`rounded-full px-2 py-1 text-xs font-medium ${status.className}`}>
-                    {status.label}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className={`rounded-full px-2 py-1 text-xs font-medium ${status.className}`}>
+                      {status.label}
+                    </span>
+                    <select
+                      value={ticket.status}
+                      onClick={(event) => event.stopPropagation()}
+                      onChange={(event) => {
+                        event.stopPropagation()
+                        onStatusChange(ticket.id, event.target.value)
+                      }}
+                      disabled={Boolean(updatingTicketIds[ticket.id])}
+                      className="min-h-[36px] rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {statusOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                    {Boolean(updatingTicketIds[ticket.id]) && <span className="text-xs text-slate-500">Se actualizează...</span>}
+                  </div>
                 </td>
                 <td className="px-4 py-3">
                   <span

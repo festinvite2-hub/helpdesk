@@ -92,12 +92,24 @@ export async function addMessage(ticketId, content) {
   return api.post(`/ticket/${ticketId}/message`, { content });
 }
 
-export async function updateTicketStatus(ticketId, newStatus, note) {
+export async function updateTicketStatus({ ticketId, newStatus, userId, note }) {
   if (useMocks()) {
-    return { success: true, status: newStatus };
+    return {
+      success: true,
+      updated_ticket: {
+        id: ticketId,
+        status: newStatus,
+        updated_at: new Date().toISOString(),
+      },
+    };
   }
 
-  return api.put(`/ticket/${ticketId}/status`, { status: newStatus, note });
+  return api.put('/ticket-status', {
+    ticket_id: ticketId,
+    new_status: newStatus,
+    user_id: userId,
+    note,
+  });
 }
 
 export async function rerouteTicket(ticketId, newDepartmentId, reason) {

@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ArrowUpDown, ClipboardList, PlusCircle, Search } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import TicketCard from '../components/tickets/TicketCard'
 import TicketTable from '../components/tickets/TicketTable'
 import { useAuth } from '../context/AuthContext'
-import { getMyTickets } from '../api/tickets'
+import { getMyTickets, updateTicketStatus } from '../api/tickets'
 import { useMocks } from '../api/client'
 import LoadingSkeleton from '../components/common/LoadingSkeleton'
 import { MOCK_MY_TICKETS_RESPONSIBLE, MOCK_MY_TICKETS_USER } from '../mocks/tickets'
@@ -56,34 +56,54 @@ const STATUS_FILTERS = [
 ]
 
 export default function MyTickets() {
-  const { role } = useAuth()
+  const { role, user } = useAuth()
   const [allTickets, setAllTickets] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [statusError, setStatusError] = useState(null)
+  const [updatingTicketIds, setUpdatingTicketIds] = useState({})
 
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState(null)
   const [sortDir, setSortDir] = useState('desc')
 
+  const loadTickets = useCallback(async () => {
+    try {
+      if (useMocks()) {
+        setAllTickets(role === 'dept_manager' ? MOCK_MY_TICKETS_RESPONSIBLE : MOCK_MY_TICKETS_USER)
+      } else {
+        const result = await getMyTickets(role)
+        setAllTickets(result?.tickets || [])
+      }
+      setError(null)
+    } catch (err) {
+      setError(err.message || 'Nu s-au putut încărca tichetele.')
+    } finally {
+      setLoading(false)
+    }
+  }, [role])
 
   useEffect(() => {
-    async function loadTickets() {
-      try {
-        if (useMocks()) {
-          setAllTickets(role === 'dept_manager' ? MOCK_MY_TICKETS_RESPONSIBLE : MOCK_MY_TICKETS_USER)
-        } else {
-          const result = await getMyTickets(role)
-          setAllTickets(result?.tickets || [])
-        }
-      } catch (err) {
-        setError(err.message || 'Nu s-au putut încărca tichetele.')
-      } finally {
-        setLoading(false)
-      }
-    }
-
     loadTickets()
-  }, [role])
+  }, [loadTickets])
+
+  const handleStatusChange = async (ticketId, nextStatus) => {
+    setStatusError(null)
+    setUpdatingTicketIds((current) => ({ ...current, [ticketId]: true }))
+
+    try {
+      await updateTicketStatus({
+        ticketId,
+        newStatus: nextStatus,
+        userId: user?.id,
+      })
+      await loadTickets()
+    } catch {
+      setStatusError('Nu am putut actualiza statusul ticketului.')
+    } finally {
+      setUpdatingTicketIds((current) => ({ ...current, [ticketId]: false }))
+    }
+  }
 
   const counts = useMemo(() => {
     const openCount = allTickets.filter((ticket) => ['open', 'in_progress', 'waiting'].includes(ticket.status)).length
@@ -141,6 +161,7 @@ export default function MyTickets() {
         <h1 className="text-xl font-bold text-slate-900">Ticketele mele</h1>
         <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
         {newestUpdate && <p className="mt-1 text-xs text-slate-400">Ultima actualizare: {newestUpdate}</p>}
+        {statusError && <p className="mt-2 text-sm text-red-600">{statusError}</p>}
       </header>
 
       <div className="scrollbar-hide -mx-4 flex gap-3 overflow-x-auto px-4 pb-2 md:mx-0 md:px-0">
@@ -221,10 +242,20 @@ export default function MyTickets() {
         <>
           <div className="flex flex-col gap-3 md:hidden">
             {filteredTickets.map((ticket) => (
-              <TicketCard key={ticket.id} ticket={ticket} showCreatedBy={role === 'dept_manager'} />
+              <TicketCard
+                key={ticket.id}
+                ticket={ticket}
+                showCreatedBy={role === 'dept_manager'}
+                onStatusChange={handleStatusChange}
+                isStatusUpdating={Boolean(updatingTicketIds[ticket.id])}
+              />
             ))}
           </div>
-          <TicketTable tickets={filteredTickets} />
+          <TicketTable
+            tickets={filteredTickets}
+            onStatusChange={handleStatusChange}
+            updatingTicketIds={updatingTicketIds}
+          />
         </>
       )}
     </section>
