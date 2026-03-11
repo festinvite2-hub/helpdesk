@@ -17,7 +17,7 @@ const statusMap = {
   closed: { label: 'închis', className: 'bg-slate-100 text-slate-600' },
 }
 
-export default function TicketTable({ tickets, onStatusChange, updatingTicketIds }) {
+export default function TicketTable({ tickets = [], onStatusChange, updatingTicketIds = {} }) {
   const navigate = useNavigate()
 
   const statusOptions = [
@@ -71,9 +71,9 @@ export default function TicketTable({ tickets, onStatusChange, updatingTicketIds
                       onClick={(event) => event.stopPropagation()}
                       onChange={(event) => {
                         event.stopPropagation()
-                        onStatusChange(ticket.id, event.target.value)
+                        onStatusChange?.(ticket.id, event.target.value)
                       }}
-                      disabled={Boolean(updatingTicketIds[ticket.id])}
+                      disabled={!onStatusChange || Boolean(updatingTicketIds?.[ticket.id])}
                       className="min-h-[36px] rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {statusOptions.map((option) => (
@@ -82,7 +82,7 @@ export default function TicketTable({ tickets, onStatusChange, updatingTicketIds
                         </option>
                       ))}
                     </select>
-                    {Boolean(updatingTicketIds[ticket.id]) && <span className="text-xs text-slate-500">Se actualizează...</span>}
+                    {Boolean(updatingTicketIds?.[ticket.id]) && <span className="text-xs text-slate-500">Se actualizează...</span>}
                   </div>
                 </td>
                 <td className="px-4 py-3">
