@@ -17,9 +17,16 @@ const statusMap = {
   closed: { label: 'închis', className: 'bg-slate-100 text-slate-600' },
 }
 
-export default function TicketCard({ ticket, showCreatedBy = false }) {
+export default function TicketCard({ ticket, showCreatedBy = false, onStatusChange, isStatusUpdating = false }) {
   const priority = priorityMap[ticket.priority] ?? priorityMap.low
   const status = statusMap[ticket.status] ?? statusMap.open
+  const statusOptions = [
+    { value: 'open', label: 'Deschis' },
+    { value: 'in_progress', label: 'În lucru' },
+    { value: 'waiting', label: 'Așteptare' },
+    { value: 'resolved', label: 'Rezolvat' },
+    { value: 'closed', label: 'Închis' },
+  ]
 
   return (
     <Link
@@ -43,6 +50,23 @@ export default function TicketCard({ ticket, showCreatedBy = false }) {
         <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${status.className}`}>
           {status.label}
         </span>
+        <select
+          value={ticket.status}
+          onClick={(event) => event.preventDefault()}
+          onChange={(event) => {
+            event.preventDefault()
+            onStatusChange(ticket.id, event.target.value)
+          }}
+          disabled={isStatusUpdating}
+          className="min-h-[36px] rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {statusOptions.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        {isStatusUpdating && <span className="text-xs text-slate-500">Se actualizează...</span>}
         <span
           className="rounded-full px-2 py-0.5 text-xs font-medium text-white"
           style={{ backgroundColor: ticket.department_color }}
