@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { getInboxTickets, updateTicketStatus } from '../api/tickets'
+import { getAllTickets, updateTicketStatus } from '../api/tickets'
 import { useAuth } from '../context/AuthContext'
 import { Inbox as InboxIcon } from 'lucide-react'
 import TicketCard from '../components/tickets/TicketCard'
@@ -117,7 +117,7 @@ export default function Inbox() {
     async function loadTickets() {
       try {
         const currentUserId = user?.id ?? user?.user_id
-        const result = await getInboxTickets(currentUserId)
+        const result = await getAllTickets(currentUserId)
         const nextTickets = Array.isArray(result) ? result : result?.tickets
         const mappedTickets = Array.isArray(nextTickets)
           ? nextTickets.map(mapInboxTicket).filter(Boolean)
