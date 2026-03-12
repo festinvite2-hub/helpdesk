@@ -1,13 +1,36 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Plus, Pencil, User, Users } from 'lucide-react'
 import DepartmentModal from '../components/admin/DepartmentModal'
 import ToggleSwitch from '../components/common/ToggleSwitch'
-import { MOCK_DEPARTMENTS_FULL, MOCK_USERS } from '../mocks/admin'
+import { MOCK_USERS } from '../mocks/admin'
+import { getDepartments } from '../api/departments'
 
 export default function AdminDepartments() {
-  const [departments, setDepartments] = useState(MOCK_DEPARTMENTS_FULL)
+  const [departments, setDepartments] = useState([])
+  const [departmentsLoading, setDepartmentsLoading] = useState(true)
+  const [departmentsError, setDepartmentsError] = useState('')
   const [editingDepartment, setEditingDepartment] = useState(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+
+
+  useEffect(() => {
+    async function loadDepartments() {
+      setDepartmentsLoading(true)
+      setDepartmentsError('')
+
+      try {
+        const result = await getDepartments()
+        setDepartments(Array.isArray(result) ? result : [])
+      } catch {
+        setDepartmentsError('Nu s-au putut încărca departamentele')
+        setDepartments([])
+      } finally {
+        setDepartmentsLoading(false)
+      }
+    }
+
+    loadDepartments()
+  }, [])
 
   const managers = useMemo(() => MOCK_USERS.filter((user) => user.role === 'responsible'), [])
   const activeDepartments = departments.filter((department) => department.is_active).length
@@ -74,6 +97,12 @@ export default function AdminDepartments() {
           Adaugă
         </button>
       </header>
+
+      {departmentsLoading && <p className="text-sm text-slate-500">Așteaptă... se încarcă departamentele</p>}
+      {departmentsError && <p className="text-sm text-red-600">Nu s-au putut încărca departamentele</p>}
+      {!departmentsLoading && !departmentsError && departments.length === 0 && (
+        <p className="text-sm text-slate-500">Nu există departamente</p>
+      )}
 
       <div className="flex flex-col gap-3 md:grid md:grid-cols-2 md:gap-4">
         {departments.map((department) => (

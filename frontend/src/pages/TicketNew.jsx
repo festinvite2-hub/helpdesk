@@ -1,10 +1,10 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { CheckCircle2, ChevronDown, Info, Loader2 } from 'lucide-react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { createTicket } from '../api/tickets'
+import { getDepartments } from '../api/departments'
 import { CATEGORY_OPTIONS, PRIORITY_OPTIONS } from '../config/constants'
 import { useAuth } from '../context/AuthContext'
-import { MOCK_DEPARTMENTS } from '../mocks/tickets'
 
 export default function TicketNew() {
   const { role } = useAuth()
@@ -22,6 +22,31 @@ export default function TicketNew() {
   const [errors, setErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
+  const [departments, setDepartments] = useState([])
+  const [departmentsLoading, setDepartmentsLoading] = useState(false)
+  const [departmentsError, setDepartmentsError] = useState('')
+
+
+  useEffect(() => {
+    if (role !== 'admin') return
+
+    async function loadDepartments() {
+      setDepartmentsLoading(true)
+      setDepartmentsError('')
+
+      try {
+        const result = await getDepartments()
+        setDepartments(Array.isArray(result) ? result : [])
+      } catch {
+        setDepartmentsError('Nu s-au putut încărca departamentele')
+        setDepartments([])
+      } finally {
+        setDepartmentsLoading(false)
+      }
+    }
+
+    loadDepartments()
+  }, [role])
 
   const handleChange = (event) => {
     const { name, value } = event.target
@@ -85,6 +110,7 @@ export default function TicketNew() {
   }
 
   const isSubmitDisabled = !formData.title.trim() || !formData.description.trim() || isSubmitting
+    || (role === 'admin' && departmentsLoading)
 
   return (
     <section className="w-full md:mx-auto md:max-w-2xl">
@@ -200,7 +226,7 @@ export default function TicketNew() {
                   <option value="" disabled>
                     — Alege departamentul —
                   </option>
-                  {MOCK_DEPARTMENTS.map((department) => (
+                  {departments.map((department) => (
                     <option key={department.id} value={department.id}>
                       {department.name}
                     </option>
@@ -208,6 +234,11 @@ export default function TicketNew() {
                 </select>
                 <ChevronDown size={18} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-500" />
               </div>
+              {departmentsLoading && <p className="mt-1 text-sm text-slate-500">Așteaptă... se încarcă departamentele</p>}
+              {departmentsError && <p className="mt-1 text-sm text-red-600">Nu s-au putut încărca departamentele</p>}
+              {!departmentsLoading && !departmentsError && departments.length === 0 && (
+                <p className="mt-1 text-sm text-slate-500">Nu există departamente</p>
+              )}
               {errors.department && (
                 <p id="department-error" className="mt-1 text-sm text-red-600">
                   {errors.department}
