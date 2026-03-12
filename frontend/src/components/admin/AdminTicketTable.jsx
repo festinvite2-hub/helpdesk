@@ -17,7 +17,15 @@ const statusMap = {
   closed: { label: 'închis', className: 'bg-slate-100 text-slate-600' },
 }
 
-export default function AdminTicketTable({ tickets, canEditStatus = false, onStatusChange, updatingTicketIds = {} }) {
+export default function AdminTicketTable({
+  tickets,
+  canEditStatus = false,
+  onStatusChange,
+  updatingTicketIds = {},
+  showAction = false,
+  dateColumnLabel = 'Actualizat',
+  showCreatedUpdated = false,
+}) {
   const navigate = useNavigate()
 
   const statusOptions = [
@@ -39,7 +47,8 @@ export default function AdminTicketTable({ tickets, canEditStatus = false, onSta
             <th className="px-4 py-3">Departament</th>
             <th className="px-4 py-3">Prioritate</th>
             <th className="px-4 py-3">Status</th>
-            <th className="px-4 py-3">Actualizat</th>
+            <th className="px-4 py-3">{dateColumnLabel}</th>
+            {showAction && <th className="px-4 py-3 text-right">Acțiune</th>}
           </tr>
         </thead>
         <tbody>
@@ -96,7 +105,30 @@ export default function AdminTicketTable({ tickets, canEditStatus = false, onSta
                     </span>
                   )}
                 </td>
-                <td className="px-4 py-3 text-xs text-slate-500">{timeAgo(ticket.updated_at)}</td>
+                <td className="px-4 py-3 text-xs text-slate-500">
+                  {showCreatedUpdated ? (
+                    <div className="space-y-0.5">
+                      <p>Creat: {timeAgo(ticket.created_at)}</p>
+                      <p>Actualizat: {timeAgo(ticket.updated_at || ticket.created_at)}</p>
+                    </div>
+                  ) : (
+                    timeAgo(ticket.updated_at)
+                  )}
+                </td>
+                {showAction && (
+                  <td className="px-4 py-3 text-right">
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        navigate(`/tickets/${ticket.id}`)
+                      }}
+                      className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-100"
+                    >
+                      Vezi
+                    </button>
+                  </td>
+                )}
               </tr>
             )
           })}

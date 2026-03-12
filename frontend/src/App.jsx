@@ -17,6 +17,7 @@ const AdminDepartments = lazy(() => import('./pages/AdminDepartments'))
 const AdminRoutingRules = lazy(() => import('./pages/AdminRoutingRules'))
 const AdminKnowledgeBase = lazy(() => import('./pages/AdminKnowledgeBase'))
 const AdminUsers = lazy(() => import('./pages/AdminUsers'))
+const AdminTickets = lazy(() => import('./pages/AdminTickets'))
 
 
 function RoleRedirect() {
@@ -56,6 +57,7 @@ function RoutesConfig() {
         <Route path="/admin/routing-rules" element={<AdminRoutingRules />} />
         <Route path="/admin/kb" element={<AdminKnowledgeBase />} />
         <Route path="/admin/users" element={<AdminUsers />} />
+        <Route path="/admin/tickets" element={<AdminTickets />} />
       </Route>
       <Route path="*" element={<RoleRedirect />} />
     </Routes>

@@ -9,6 +9,7 @@ import {
   Workflow,
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { getAllTickets, updateTicketStatus } from '../api/tickets'
 import { getDepartments } from '../api/departments'
 import TicketCard from '../components/tickets/TicketCard'
@@ -290,7 +291,15 @@ export default function AdminDashboard() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-base font-semibold text-slate-900">Activitate recentă</h2>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-base font-semibold text-slate-900">Activitate recentă</h2>
+          <Link
+            to="/admin/tickets"
+            className="text-sm font-medium text-blue-700 transition-colors hover:text-blue-800"
+          >
+            Vezi toate ticketele
+          </Link>
+        </div>
         {recentTickets.length === 0 ? (
           <div className="rounded-xl border border-dashed border-slate-200 bg-white px-6 py-8 text-center">
             <p className="text-sm text-slate-600">Nu există tichete disponibile.</p>
