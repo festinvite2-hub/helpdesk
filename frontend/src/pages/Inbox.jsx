@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { getTicketsByRole, updateTicketStatus } from '../api/tickets'
 import { useAuth } from '../context/AuthContext'
 import { Inbox as InboxIcon } from 'lucide-react'
@@ -113,27 +113,26 @@ export default function Inbox() {
     []
   )
 
-  useEffect(() => {
-    async function loadTickets() {
-      try {
-        const currentUserId = user?.id ?? user?.user_id
-        const result = await getTicketsByRole(role, currentUserId)
-        const nextTickets = Array.isArray(result) ? result : result?.tickets
-        const mappedTickets = Array.isArray(nextTickets)
-          ? nextTickets.map(mapInboxTicket).filter(Boolean)
-          : []
-        setTickets(mappedTickets)
-        setLoadError(null)
-      } catch (error) {
-        setLoadError(error.message || 'Nu s-au putut încărca tichetele primite.')
-      } finally {
-        setLoading(false)
-      }
+  const loadTickets = useCallback(async () => {
+    try {
+      const currentUserId = user?.id ?? user?.user_id
+      const result = await getTicketsByRole(role, currentUserId)
+      const nextTickets = Array.isArray(result) ? result : result?.tickets
+      const mappedTickets = Array.isArray(nextTickets)
+        ? nextTickets.map(mapInboxTicket).filter(Boolean)
+        : []
+      setTickets(mappedTickets)
+      setLoadError(null)
+    } catch (error) {
+      setLoadError(error.message || 'Nu s-au putut încărca tichetele primite.')
+    } finally {
+      setLoading(false)
     }
-
-    loadTickets()
   }, [role, user?.id, user?.user_id])
 
+  useEffect(() => {
+    loadTickets()
+  }, [loadTickets])
 
   const handleStatusChange = async (ticketId, nextStatus) => {
     if (!canEditStatus) return
@@ -145,12 +144,10 @@ export default function Inbox() {
       await updateTicketStatus({
         ticketId,
         newStatus: nextStatus,
-        userId: user?.id,
+        userId: user?.id ?? user?.user_id,
       })
 
-      setTickets((current) =>
-        current.map((ticket) => (ticket.id === ticketId ? { ...ticket, status: nextStatus } : ticket))
-      )
+      await loadTickets()
     } catch {
       setStatusError('Nu am putut actualiza statusul ticketului.')
     } finally {
