@@ -11,6 +11,7 @@ import {
   Workflow,
   BookOpen,
   Inbox,
+  Tickets,
 } from 'lucide-react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { useMocks } from '../api/client'
@@ -50,6 +51,7 @@ export const roleLinks = {
   ],
   admin: [
     { to: '/admin/dashboard', label: 'Panou administrare', icon: Shield },
+    { to: '/admin/tickets', label: 'Toate ticketele', icon: Tickets },
     { to: '/admin/departments', label: 'Departamente', icon: Building2 },
     { to: '/admin/users', label: 'Utilizatori', icon: Users },
     { to: '/admin/routing-rules', label: 'Reguli de rutare', icon: Workflow },
@@ -67,6 +69,7 @@ export const routeAccess = {
   '/profile': ['user', 'dept_manager'],
   '/inbox': ['dept_manager', 'admin'],
   '/admin/dashboard': ['admin'],
+  '/admin/tickets': ['admin'],
   '/admin/departments': ['admin'],
   '/admin/routing-rules': ['admin'],
   '/admin/kb': ['admin'],
