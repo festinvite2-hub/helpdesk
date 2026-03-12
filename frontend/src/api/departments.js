@@ -1,4 +1,4 @@
-import { api, useMocks } from './client';
+import { api, apiRequest, useMocks } from './client';
 import { MOCK_DEPARTMENTS_FULL } from '../mocks/admin';
 
 export async function getDepartments() {
@@ -6,7 +6,13 @@ export async function getDepartments() {
     return MOCK_DEPARTMENTS_FULL;
   }
 
-  return api.get('/departments');
+  const res = await apiRequest('/departments');
+
+  if (!res.success) {
+    throw new Error('Nu s-au putut încărca departamentele');
+  }
+
+  return Array.isArray(res.departments) ? res.departments : [];
 }
 
 export async function createDepartment(data) {
