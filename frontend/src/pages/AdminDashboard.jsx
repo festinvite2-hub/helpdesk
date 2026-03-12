@@ -92,7 +92,8 @@ export default function AdminDashboard() {
   useEffect(() => {
     async function loadDashboardData() {
       try {
-        const [ticketsResult, departmentsResult] = await Promise.all([getAllTickets(), getDepartments()])
+        const currentUserId = user?.id ?? user?.user_id
+        const [ticketsResult, departmentsResult] = await Promise.all([getAllTickets(currentUserId), getDepartments()])
         setAllTickets(Array.isArray(ticketsResult) ? ticketsResult : ticketsResult?.tickets ?? [])
         setDepartments(Array.isArray(departmentsResult) ? departmentsResult : [])
         setLoadError(null)
@@ -104,7 +105,7 @@ export default function AdminDashboard() {
     }
 
     loadDashboardData()
-  }, [])
+  }, [user?.id, user?.user_id])
 
   const totalTickets = allTickets.length
   const openTickets = allTickets.filter((ticket) => ticket.status === 'open').length

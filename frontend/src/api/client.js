@@ -19,7 +19,9 @@ export async function apiRequest(endpoint, options = {}) {
   const { skipAuth = false, ...requestOptions } = options;
   const method = (requestOptions.method || 'GET').toUpperCase();
   const hasJsonBody = ['POST', 'PUT', 'PATCH'].includes(method) && requestOptions.body != null;
-  const isPublicWebhookGet = method === 'GET' && ['/all-tickets', '/departments'].includes(endpoint);
+  const isPublicWebhookGet =
+    method === 'GET' &&
+    ['/all-tickets', '/departments'].some((publicEndpoint) => endpoint.startsWith(publicEndpoint));
 
   const config = {
     method,

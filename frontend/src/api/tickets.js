@@ -61,12 +61,26 @@ export async function getInboxTickets(userId) {
   return api.get(`/inbox-tickets?${query}`);
 }
 
-export async function getAllTickets() {
+export async function getAllTickets(userId) {
   if (useMocks()) {
     return MOCK_ALL_TICKETS;
   }
 
-  return api.get('/all-tickets');
+  if (!userId) {
+    return { success: true, tickets: [] };
+  }
+
+  const query = new URLSearchParams({ user_id: String(userId) }).toString();
+  const result = await api.get(`/all-tickets?${query}`);
+
+  if (Array.isArray(result)) {
+    return { success: true, tickets: result };
+  }
+
+  return {
+    success: result?.success ?? true,
+    tickets: Array.isArray(result?.tickets) ? result.tickets : [],
+  };
 }
 
 export async function getTicketDetail(ticketId) {
