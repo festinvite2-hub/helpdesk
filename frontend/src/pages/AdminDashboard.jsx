@@ -90,9 +90,11 @@ export default function AdminDashboard() {
   const [updatingTicketIds, setUpdatingTicketIds] = useState({})
 
   const loadDashboardData = useCallback(async () => {
+    setLoadError(null)
+
     try {
-      const currentUserId = user?.id ?? user?.user_id
-      const [ticketsResult, departmentsResult] = await Promise.all([getAllTickets(currentUserId), getDepartments()])
+      const currentUserId = user?.id ?? user?.user_id ?? user?.userId
+      const [ticketsResult, departmentsResult] = await Promise.all([getAllTickets(currentUserId || user), getDepartments()])
       setAllTickets(Array.isArray(ticketsResult) ? ticketsResult : ticketsResult?.tickets ?? [])
       setDepartments(Array.isArray(departmentsResult) ? departmentsResult : [])
       setLoadError(null)
@@ -101,7 +103,7 @@ export default function AdminDashboard() {
     } finally {
       setLoading(false)
     }
-  }, [user?.id, user?.user_id])
+  }, [user])
 
   useEffect(() => {
     loadDashboardData()
@@ -113,9 +115,13 @@ export default function AdminDashboard() {
     (ticket) => ['critical', 'high'].includes(ticket.priority) && ticket.status === 'open'
   ).length
   const resolvedTodayTickets = allTickets.filter((ticket) => {
-    if (!ticket.resolved_at) return false
-    const resolvedDate = new Date(ticket.resolved_at)
     const now = new Date()
+    const isResolvedStatus = ['resolved', 'closed'].includes(ticket.status)
+    const resolvedAtRaw = ticket.resolved_at || ticket.updated_at
+
+    if (!isResolvedStatus || !resolvedAtRaw) return false
+
+    const resolvedDate = new Date(resolvedAtRaw)
 
     return (
       resolvedDate.getDate() === now.getDate() &&
@@ -132,7 +138,7 @@ export default function AdminDashboard() {
   }
 
   const recentTickets = [...allTickets]
-    .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+    .sort((a, b) => new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime())
     .slice(0, 5)
 
   const departmentCards = useMemo(() => {
