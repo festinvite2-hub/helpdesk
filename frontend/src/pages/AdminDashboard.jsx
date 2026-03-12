@@ -8,7 +8,7 @@ import {
   Users,
   Workflow,
 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { getAllTickets, updateTicketStatus } from '../api/tickets'
 import { getDepartments } from '../api/departments'
 import TicketCard from '../components/tickets/TicketCard'
@@ -89,23 +89,23 @@ export default function AdminDashboard() {
   const [statusError, setStatusError] = useState(null)
   const [updatingTicketIds, setUpdatingTicketIds] = useState({})
 
-  useEffect(() => {
-    async function loadDashboardData() {
-      try {
-        const currentUserId = user?.id ?? user?.user_id
-        const [ticketsResult, departmentsResult] = await Promise.all([getAllTickets(currentUserId), getDepartments()])
-        setAllTickets(Array.isArray(ticketsResult) ? ticketsResult : ticketsResult?.tickets ?? [])
-        setDepartments(Array.isArray(departmentsResult) ? departmentsResult : [])
-        setLoadError(null)
-      } catch (error) {
-        setLoadError(error.message || 'Nu s-au putut încărca datele panoului de administrare.')
-      } finally {
-        setLoading(false)
-      }
+  const loadDashboardData = useCallback(async () => {
+    try {
+      const currentUserId = user?.id ?? user?.user_id
+      const [ticketsResult, departmentsResult] = await Promise.all([getAllTickets(currentUserId), getDepartments()])
+      setAllTickets(Array.isArray(ticketsResult) ? ticketsResult : ticketsResult?.tickets ?? [])
+      setDepartments(Array.isArray(departmentsResult) ? departmentsResult : [])
+      setLoadError(null)
+    } catch (error) {
+      setLoadError(error.message || 'Nu s-au putut încărca datele panoului de administrare.')
+    } finally {
+      setLoading(false)
     }
-
-    loadDashboardData()
   }, [user?.id, user?.user_id])
+
+  useEffect(() => {
+    loadDashboardData()
+  }, [loadDashboardData])
 
   const totalTickets = allTickets.length
   const openTickets = allTickets.filter((ticket) => ticket.status === 'open').length
@@ -199,12 +199,10 @@ export default function AdminDashboard() {
       await updateTicketStatus({
         ticketId,
         newStatus: nextStatus,
-        userId: user?.id,
+        userId: user?.id ?? user?.user_id,
       })
 
-      setAllTickets((current) =>
-        current.map((ticket) => (ticket.id === ticketId ? { ...ticket, status: nextStatus } : ticket))
-      )
+      await loadDashboardData()
     } catch {
       setStatusError('Nu am putut actualiza statusul ticketului.')
     } finally {

@@ -147,7 +147,7 @@ export async function updateTicketStatus({ ticketId, newStatus, userId, note }) 
     };
   }
 
-  return api.put('/ticket-status', {
+  return api.post('/update-ticket-status', {
     ticket_id: ticketId,
     new_status: newStatus,
     user_id: userId,
