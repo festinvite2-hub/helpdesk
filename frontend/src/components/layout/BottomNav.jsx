@@ -7,8 +7,7 @@ import {
   PlusCircle,
   Shield,
   User,
-  Users,
-  Workflow,
+  Users
 } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
@@ -34,7 +33,7 @@ export default function BottomNav() {
       { label: 'Departamente', icon: Building2, to: '/admin/departments' },
       { label: 'Ticket Nou', icon: PlusCircle, to: '/tickets/new', isCenter: true },
       { label: 'Utilizatori', icon: Users, to: '/admin/users' },
-      { label: 'Rutare', icon: Workflow, to: '/admin/routing-rules' },
+      { label: 'Profil', icon: User, to: '/profile' },
     ],
   }
 

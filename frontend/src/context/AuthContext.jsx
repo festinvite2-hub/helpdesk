@@ -57,6 +57,7 @@ export const roleLinks = {
     { to: '/admin/routing-rules', label: 'Reguli de rutare', icon: Workflow },
     { to: '/admin/kb', label: 'Bază de cunoștințe', icon: BookOpen },
     { to: '/tickets/new', label: 'Creează tichet', icon: PlusCircle },
+    { to: '/profile', label: 'Profil', icon: User },
   ],
 }
 
@@ -66,7 +67,7 @@ export const routeAccess = {
   '/tickets/:id': ['user', 'dept_manager', 'admin'],
   '/my-tickets': ['user'],
   '/assistant': ['user'],
-  '/profile': ['user', 'dept_manager'],
+  '/profile': ['user', 'dept_manager', 'admin'],
   '/inbox': ['dept_manager', 'admin'],
   '/admin/dashboard': ['admin'],
   '/admin/tickets': ['admin'],

@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { ROLE_LABELS, roleLinks, useAuth } from '../../context/AuthContext'
 import Brand from './Brand'
 import Navigation from './Navigation'
@@ -14,11 +15,14 @@ export default function Sidebar() {
         {isMockMode ? (
           <RolePicker role={role} onRoleChange={setRole} />
         ) : user ? (
-          <div className="rounded-xl border border-slate-200 px-3 py-2 text-sm">
+          <Link
+            to="/profile"
+            className="block rounded-xl border border-slate-200 px-3 py-2 text-sm transition-colors hover:bg-slate-50"
+          >
             <p className="font-medium text-slate-900">{user.full_name}</p>
             <p className="text-xs text-slate-500">{user.email}</p>
             <p className="text-xs font-semibold text-slate-600">{ROLE_LABELS[user.role]}</p>
-          </div>
+          </Link>
         ) : null}
       </div>
 

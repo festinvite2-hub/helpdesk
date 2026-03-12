@@ -53,7 +53,7 @@ export default function Profile() {
         name: user.full_name,
         email: user.email,
         role: user.role || 'user',
-        department: user.department ?? null,
+        department: user.department ?? user.main_department ?? null,
       }
     : PROFILES[role] ?? PROFILES.user
 
@@ -62,6 +62,12 @@ export default function Profile() {
   const [darkMode, setDarkMode] = useState(false)
 
   const stats = useMemo(() => STATS_BY_ROLE[profile.role] ?? STATS_BY_ROLE.user, [profile.role])
+
+  const departmentName = useMemo(() => {
+    if (!profile.department) return null
+    if (typeof profile.department === 'string') return profile.department
+    return profile.department.name ?? null
+  }, [profile.department])
 
   return (
     <section className="space-y-4 md:mx-auto md:max-w-lg">
@@ -101,18 +107,18 @@ export default function Profile() {
               {ROLE_LABELS[profile.role]}
             </span>
           </div>
-          {profile.role === 'dept_manager' && (
+          {departmentName && (
             <div className="flex min-h-[44px] items-center justify-between gap-4">
-              <span className="text-sm text-slate-500">Departament</span>
-              {profile.department ? (
+              <span className="text-sm text-slate-500">Departament principal</span>
+              {profile.department && typeof profile.department === 'object' && profile.department.color ? (
                 <span
                   className="rounded-full px-2.5 py-1 text-xs font-semibold text-white"
                   style={{ backgroundColor: profile.department.color }}
                 >
-                  {profile.department.name}
+                  {departmentName}
                 </span>
               ) : (
-                <span className="text-sm font-medium text-slate-900">—</span>
+                <span className="text-sm font-medium text-slate-900">{departmentName}</span>
               )}
             </div>
           )}
