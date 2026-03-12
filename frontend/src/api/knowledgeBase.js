@@ -20,7 +20,7 @@ export async function uploadDocument(formData) {
   }
 
   const token = localStorage.getItem('helpdesk_token');
-  const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5678/webhook';
+  const baseUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_BASE || '/api/webhook';
 
   try {
     const response = await fetch(`${baseUrl}/kb/upload`, {
