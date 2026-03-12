@@ -18,7 +18,7 @@ export default function Login() {
     setError('')
 
     if (isMockMode) {
-      navigate('/dashboard')
+      navigate(getHomeRouteByRole('user'))
       return
     }
 

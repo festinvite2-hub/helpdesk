@@ -5,7 +5,6 @@ import AppLayout from './components/layout/AppLayout'
 import { AuthProvider, RoleGuard, getHomeRouteByRole, useAuth } from './context/AuthContext'
 
 const Login = lazy(() => import('./pages/Login'))
-const UserDashboard = lazy(() => import('./pages/UserDashboard'))
 const TicketNew = lazy(() => import('./pages/TicketNew'))
 const TicketDetail = lazy(() => import('./pages/TicketDetail'))
 const AiAssistant = lazy(() => import('./pages/AiAssistant'))
@@ -44,8 +43,8 @@ function RoutesConfig() {
           </RoleGuard>
         }
       >
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/dashboard" element={<UserDashboard />} />
+        <Route path="/" element={<RoleRedirect />} />
+        <Route path="/dashboard" element={<RoleRedirect />} />
         <Route path="/tickets/new" element={<TicketNew />} />
         <Route path="/tickets/:id" element={<TicketDetail />} />
         <Route path="/my-tickets" element={<MyTickets />} />

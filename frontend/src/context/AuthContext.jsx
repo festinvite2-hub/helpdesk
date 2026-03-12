@@ -1,6 +1,5 @@
 import { createContext, useContext, useMemo, useState } from 'react'
 import {
-  Home,
   PlusCircle,
   Bot,
   ClipboardList,
@@ -27,7 +26,7 @@ export function normalizeRole(role) {
 export function getHomeRouteByRole(role) {
   if (role === 'admin') return '/admin/dashboard'
   if (role === 'dept_manager') return '/inbox'
-  return '/dashboard'
+  return '/my-tickets'
 }
 
 export const ROLE_LABELS = {
@@ -39,7 +38,6 @@ export const ROLE_LABELS = {
 
 export const roleLinks = {
   user: [
-    { to: '/dashboard', label: 'Panou principal', icon: Home },
     { to: '/tickets/new', label: 'Creează tichet', icon: PlusCircle },
     { to: '/my-tickets', label: 'Ticketele mele', icon: ClipboardList },
     { to: '/assistant', label: 'Asistent AI', icon: Bot },
