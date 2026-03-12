@@ -95,7 +95,17 @@ export default function AdminDashboard() {
     try {
       const currentUserId = user?.id ?? user?.user_id ?? user?.userId
       const [ticketsResult, departmentsResult] = await Promise.all([getAllTickets(currentUserId || user), getDepartments()])
-      setAllTickets(Array.isArray(ticketsResult) ? ticketsResult : ticketsResult?.tickets ?? [])
+
+      const tickets =
+        Array.isArray(ticketsResult)
+          ? ticketsResult
+          : Array.isArray(ticketsResult?.tickets)
+            ? ticketsResult.tickets
+            : Array.isArray(ticketsResult?.data?.tickets)
+              ? ticketsResult.data.tickets
+              : []
+
+      setAllTickets(tickets)
       setDepartments(Array.isArray(departmentsResult) ? departmentsResult : [])
       setLoadError(null)
     } catch (error) {
@@ -109,26 +119,46 @@ export default function AdminDashboard() {
     loadDashboardData()
   }, [loadDashboardData])
 
-  const totalTickets = allTickets.length
-  const openTickets = allTickets.filter((ticket) => ticket.status === 'open').length
-  const criticalOpenTickets = allTickets.filter(
-    (ticket) => ['critical', 'high'].includes(ticket.priority) && ticket.status === 'open'
-  ).length
-  const resolvedTodayTickets = allTickets.filter((ticket) => {
+  const { totalTickets, openTickets, criticalOpenTickets, resolvedTodayTickets } = useMemo(() => {
     const now = new Date()
-    const isResolvedStatus = ['resolved', 'closed'].includes(ticket.status)
-    const resolvedAtRaw = ticket.resolved_at || ticket.updated_at
 
-    if (!isResolvedStatus || !resolvedAtRaw) return false
+    return allTickets.reduce(
+      (acc, ticket) => {
+        const normalizedStatus = String(ticket.status || '').toLowerCase()
+        const normalizedPriority = String(ticket.priority || '').toLowerCase()
 
-    const resolvedDate = new Date(resolvedAtRaw)
+        acc.totalTickets += 1
 
-    return (
-      resolvedDate.getDate() === now.getDate() &&
-      resolvedDate.getMonth() === now.getMonth() &&
-      resolvedDate.getFullYear() === now.getFullYear()
+        if (normalizedStatus === 'open') {
+          acc.openTickets += 1
+        }
+
+        if (['critical', 'high'].includes(normalizedPriority) && normalizedStatus === 'open') {
+          acc.criticalOpenTickets += 1
+        }
+
+        const resolvedAtRaw = ticket.resolved_at || ticket.updated_at
+        if (['resolved', 'closed'].includes(normalizedStatus) && resolvedAtRaw) {
+          const resolvedDate = new Date(resolvedAtRaw)
+          if (
+            resolvedDate.getDate() === now.getDate() &&
+            resolvedDate.getMonth() === now.getMonth() &&
+            resolvedDate.getFullYear() === now.getFullYear()
+          ) {
+            acc.resolvedTodayTickets += 1
+          }
+        }
+
+        return acc
+      },
+      {
+        totalTickets: 0,
+        openTickets: 0,
+        criticalOpenTickets: 0,
+        resolvedTodayTickets: 0,
+      }
     )
-  }).length
+  }, [allTickets])
 
   const statValues = {
     total: totalTickets,
