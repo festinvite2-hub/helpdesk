@@ -6,6 +6,28 @@ import {
 } from '../mocks/tickets';
 import { MOCK_TICKET_DETAIL, MOCK_MESSAGES } from '../mocks/ticketDetail';
 
+function resolveUserId(userOrId) {
+  if (typeof userOrId === 'string' || typeof userOrId === 'number') {
+    return String(userOrId);
+  }
+
+  if (userOrId && typeof userOrId === 'object') {
+    const directId = userOrId.id ?? userOrId.user_id ?? userOrId.userId;
+    if (directId) return String(directId);
+
+    const nestedId = userOrId.user?.id ?? userOrId.user?.user_id ?? userOrId.user?.userId;
+    if (nestedId) return String(nestedId);
+  }
+
+  try {
+    const storedUser = JSON.parse(localStorage.getItem('helpdesk_user') || 'null');
+    const storedUserId = storedUser?.id ?? storedUser?.user_id ?? storedUser?.userId;
+    return storedUserId ? String(storedUserId) : null;
+  } catch {
+    return null;
+  }
+}
+
 function normalizeRole(role) {
   if (role === 'responsible') return 'dept_manager';
   if (role === 'dept_manager' || role === 'admin' || role === 'user') return role;
@@ -76,10 +98,12 @@ export async function getInboxTickets(userId) {
   };
 }
 
-export async function getAllTickets(userId) {
+export async function getAllTickets(userOrId) {
   if (useMocks()) {
     return MOCK_ALL_TICKETS;
   }
+
+  const userId = resolveUserId(userOrId);
 
   if (!userId) {
     return { success: true, tickets: [] };
