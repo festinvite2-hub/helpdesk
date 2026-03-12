@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5678/webhook';
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5678/webhook-test';
 const USE_MOCKS = import.meta.env.VITE_USE_MOCKS === 'true';
 
 export function useMocks() {
