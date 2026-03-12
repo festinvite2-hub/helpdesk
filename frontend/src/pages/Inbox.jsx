@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { getAllTickets, updateTicketStatus } from '../api/tickets'
+import { getTicketsByRole, updateTicketStatus } from '../api/tickets'
 import { useAuth } from '../context/AuthContext'
 import { Inbox as InboxIcon } from 'lucide-react'
 import TicketCard from '../components/tickets/TicketCard'
@@ -74,7 +74,7 @@ export default function Inbox() {
   const [statusError, setStatusError] = useState(null)
   const [updatingTicketIds, setUpdatingTicketIds] = useState({})
 
-  const canEditStatus = role === 'dept_manager' || role === 'admin'
+  const canEditStatus = role === 'dept_manager' || role === 'admin' || role === 'responsible'
 
   const openCount = tickets.filter((ticket) => ticket.status === 'open').length
   const inProgressCount = tickets.filter((ticket) => ticket.status === 'in_progress').length
@@ -117,7 +117,7 @@ export default function Inbox() {
     async function loadTickets() {
       try {
         const currentUserId = user?.id ?? user?.user_id
-        const result = await getAllTickets(currentUserId)
+        const result = await getTicketsByRole(role, currentUserId)
         const nextTickets = Array.isArray(result) ? result : result?.tickets
         const mappedTickets = Array.isArray(nextTickets)
           ? nextTickets.map(mapInboxTicket).filter(Boolean)
@@ -132,7 +132,7 @@ export default function Inbox() {
     }
 
     loadTickets()
-  }, [user?.id, user?.user_id])
+  }, [role, user?.id, user?.user_id])
 
 
   const handleStatusChange = async (ticketId, nextStatus) => {

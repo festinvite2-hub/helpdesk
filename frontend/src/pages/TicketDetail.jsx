@@ -44,7 +44,7 @@ export default function TicketDetail() {
   const ticket = MOCK_TICKET_DETAIL
   const status = statusMap[ticket.status] ?? statusMap.open
   const priority = priorityMap[ticket.priority] ?? priorityMap.medium
-  const canManage = role === 'dept_manager' || role === 'admin'
+  const canManage = role === 'dept_manager' || role === 'responsible' || role === 'admin'
 
   const sortedMessages = useMemo(
     () => [...messages].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()),
@@ -86,8 +86,8 @@ export default function TicketDetail() {
 
     const newMsg = {
       id: `m${Date.now()}`,
-      sender_type: role === 'admin' ? 'admin' : role === 'dept_manager' ? 'dept_manager' : 'user',
-      sender_name: role === 'admin' ? 'Administrator' : role === 'dept_manager' ? 'Andrei Tecuci' : 'Maria Popescu',
+      sender_type: role === 'admin' ? 'admin' : role === 'dept_manager' || role === 'responsible' ? 'dept_manager' : 'user',
+      sender_name: role === 'admin' ? 'Administrator' : role === 'dept_manager' || role === 'responsible' ? 'Andrei Tecuci' : 'Maria Popescu',
       content: replyText.trim(),
       created_at: new Date().toISOString(),
     }

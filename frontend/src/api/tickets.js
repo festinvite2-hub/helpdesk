@@ -6,6 +6,12 @@ import {
 } from '../mocks/tickets';
 import { MOCK_TICKET_DETAIL, MOCK_MESSAGES } from '../mocks/ticketDetail';
 
+function normalizeRole(role) {
+  if (role === 'responsible') return 'dept_manager';
+  if (role === 'dept_manager' || role === 'admin' || role === 'user') return role;
+  return 'user';
+}
+
 export function createTicketMock(payload) {
   return new Promise((resolve) => {
     setTimeout(() => {
@@ -58,7 +64,16 @@ export async function getInboxTickets(userId) {
   }
 
   const query = new URLSearchParams({ user_id: String(userId) }).toString();
-  return api.get(`/inbox-tickets?${query}`);
+  const result = await api.get(`/inbox-tickets?${query}`);
+
+  if (Array.isArray(result)) {
+    return { success: true, tickets: result };
+  }
+
+  return {
+    success: result?.success ?? true,
+    tickets: Array.isArray(result?.tickets) ? result.tickets : [],
+  };
 }
 
 export async function getAllTickets(userId) {
@@ -81,6 +96,20 @@ export async function getAllTickets(userId) {
     success: result?.success ?? true,
     tickets: Array.isArray(result?.tickets) ? result.tickets : [],
   };
+}
+
+export async function getTicketsByRole(role, userId) {
+  const normalizedRole = normalizeRole(role);
+
+  if (normalizedRole === 'admin') {
+    return getAllTickets(userId);
+  }
+
+  if (normalizedRole === 'dept_manager') {
+    return getInboxTickets(userId);
+  }
+
+  return getMyTickets(normalizedRole);
 }
 
 export async function getTicketDetail(ticketId) {
