@@ -34,6 +34,25 @@ function extractRoutingRules(response) {
   return Array.isArray(list) ? list.map(normalizeRoutingRule) : [];
 }
 
+
+function serializeRuleData(ruleData = {}) {
+  const targetDepartmentId =
+    ruleData.target_department_id
+    ?? ruleData.targetDepartmentId
+    ?? ruleData.target_department?.id
+    ?? '';
+
+  const serialized = {
+    ...ruleData,
+    target_department_id: String(targetDepartmentId),
+  };
+
+  delete serialized.target_department;
+  delete serialized.targetDepartment;
+
+  return serialized;
+}
+
 function requireUserId(userId) {
   if (!userId) {
     throw new Error('Nu am putut identifica utilizatorul curent.');
@@ -74,7 +93,7 @@ export async function createRoutingRule(ruleData, userId) {
     body: JSON.stringify({
       action: 'create',
       user_id: resolvedUserId,
-      rule_data: ruleData,
+      rule_data: serializeRuleData(ruleData),
     }),
   });
 }
@@ -91,7 +110,7 @@ export async function updateRoutingRule(ruleData, userId) {
     body: JSON.stringify({
       action: 'update',
       user_id: resolvedUserId,
-      rule_data: ruleData,
+      rule_data: serializeRuleData(ruleData),
     }),
   });
 }
