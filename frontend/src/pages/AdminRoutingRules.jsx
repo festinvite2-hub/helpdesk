@@ -340,7 +340,7 @@ export default function AdminRoutingRules() {
               </div>
 
               <p className="mt-2 text-sm text-slate-600">
-                <span className="font-medium">Departament:</span> {rule.target_department?.name || 'Nesetat'}
+                <span className="font-medium">Departament:</span> {rule.target_department_name ?? 'Nesetat'}
               </p>
               <p className="mt-1 text-sm text-slate-600">
                 <span className="font-medium">Cuvinte cheie:</span> {rule.keywords?.join(', ') || '—'}
