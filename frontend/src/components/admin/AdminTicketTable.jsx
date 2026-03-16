@@ -75,7 +75,7 @@ export default function AdminTicketTable({
                     className="rounded-full px-2 py-1 text-xs font-medium text-white"
                     style={{ backgroundColor: ticket.department_color }}
                   >
-                    {ticket.department}
+                    {ticket.department || 'Nesetat'}
                   </span>
                 </td>
                 <td className="px-4 py-3">
