@@ -67,8 +67,15 @@ export default function MyTickets() {
   const hasLoadedTicketsRef = useRef(false)
 
   const loadTickets = useCallback(async () => {
+    if (import.meta.env.DEV) {
+      console.debug('[MyTickets] loadTickets called')
+    }
+
     try {
       const result = await getMyTickets(role)
+      if (import.meta.env.DEV) {
+        console.debug('[MyTickets] setAllTickets replacing list', result?.tickets || [])
+      }
       setAllTickets(result?.tickets || [])
       setError(null)
     } catch (err) {
