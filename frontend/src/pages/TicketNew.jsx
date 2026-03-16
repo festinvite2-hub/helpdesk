@@ -21,7 +21,6 @@ export default function TicketNew() {
   })
   const [errors, setErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [successMessage, setSuccessMessage] = useState('')
   const [departments, setDepartments] = useState([])
   const [departmentsLoading, setDepartmentsLoading] = useState(false)
   const [departmentsError, setDepartmentsError] = useState('')
@@ -72,7 +71,14 @@ export default function TicketNew() {
     return nextErrors
   }
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (event) => {
+    event.preventDefault()
+    if (isSubmitting) return
+
+    if (import.meta.env.DEV) {
+      console.debug('[TicketNew] handleSubmit triggered')
+    }
+
     const nextErrors = validate()
 
     if (Object.keys(nextErrors).length > 0) {
@@ -81,10 +87,13 @@ export default function TicketNew() {
     }
 
     setIsSubmitting(true)
-    setSuccessMessage('')
     setErrors((current) => ({ ...current, submit: '' }))
 
     try {
+      if (import.meta.env.DEV) {
+        console.debug('[TicketNew] createTicket called')
+      }
+
       const result = await createTicket({
         title: formData.title,
         description: formData.description,
@@ -95,18 +104,15 @@ export default function TicketNew() {
       })
 
       if (result.success) {
-        setSuccessMessage(`Tichetul ${result.ticket?.ticket_number || ''} a fost creat cu succes.`)
-        setTimeout(() => {
-          navigate('/dashboard')
-        }, 1200)
+        navigate('/my-tickets')
       } else {
         setErrors({ submit: result.error || 'Eroare la crearea tichetului.' })
       }
     } catch (err) {
       setErrors({ submit: err.message || 'Nu s-a putut contacta serverul.' })
+    } finally {
+      setIsSubmitting(false)
     }
-
-    setIsSubmitting(false)
   }
 
   const isSubmitDisabled = !formData.title.trim() || !formData.description.trim() || isSubmitting
@@ -123,7 +129,7 @@ export default function TicketNew() {
         </p>
       </header>
 
-      <form className="space-y-4 pb-28" onSubmit={(event) => event.preventDefault()} noValidate>
+      <form className="space-y-4 pb-28" onSubmit={handleSubmit} noValidate>
         <div>
           <label htmlFor="title" className="mb-1 block text-sm font-medium text-slate-700">
             Titlu
@@ -295,14 +301,6 @@ export default function TicketNew() {
           </div>
         </div>
 
-        {successMessage && (
-          <div className="rounded-xl border border-green-200 bg-green-50 p-4 text-center text-green-700">
-            <div className="flex items-center justify-center gap-2 text-sm font-medium">
-              <CheckCircle2 size={18} />
-              <span>{successMessage}</span>
-            </div>
-          </div>
-        )}
 
         {errors.submit && (
           <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -312,8 +310,7 @@ export default function TicketNew() {
 
         <div className="fixed bottom-20 left-0 right-0 bg-gradient-to-t from-white via-white to-transparent px-4 pb-2 pt-4 md:static md:bg-none md:px-0 md:pb-0 md:pt-2">
           <button
-            type="button"
-            onClick={handleSubmit}
+            type="submit"
             disabled={isSubmitDisabled}
             className="flex w-full min-h-[52px] items-center justify-center gap-2 rounded-xl bg-blue-600 text-base font-semibold text-white shadow-lg transition-all active:scale-[0.98] active:bg-blue-700 disabled:bg-slate-300 disabled:text-slate-500 md:w-auto md:px-8 md:shadow-none"
           >
