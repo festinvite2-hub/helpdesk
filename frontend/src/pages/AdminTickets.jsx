@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { getAllTickets, updateTicketStatus } from '../api/tickets'
+import { getAllTickets, rerouteTicket, updateTicketStatus } from '../api/tickets'
 import AdminTicketTable from '../components/admin/AdminTicketTable'
 import TicketCard from '../components/tickets/TicketCard'
 import LoadingSkeleton from '../components/common/LoadingSkeleton'
 import { useAuth } from '../context/AuthContext'
+import { getDepartments } from '../api/departments'
 
 const ALL_OPTION_VALUE = 'toate'
 
@@ -21,7 +22,11 @@ export default function AdminTickets() {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(null)
   const [statusError, setStatusError] = useState(null)
+  const [statusSuccess, setStatusSuccess] = useState('')
   const [updatingTicketIds, setUpdatingTicketIds] = useState({})
+  const [departments, setDepartments] = useState([])
+  const [rerouteByTicket, setRerouteByTicket] = useState({})
+  const [rerouteLoadingByTicket, setRerouteLoadingByTicket] = useState({})
 
   const statusFilter = searchParams.get('status') || ALL_OPTION_VALUE
   const departmentFilter = searchParams.get('departament') || ALL_OPTION_VALUE
@@ -56,6 +61,9 @@ export default function AdminTickets() {
             : []
 
       setTickets(allTickets)
+
+      const departmentsResult = await getDepartments()
+      setDepartments(Array.isArray(departmentsResult) ? departmentsResult : [])
     } catch (error) {
       setLoadError(error?.message || 'Nu s-au putut încărca ticketele administratorului.')
     } finally {
@@ -69,6 +77,7 @@ export default function AdminTickets() {
 
   const handleStatusChange = async (ticketId, nextStatus) => {
     setStatusError(null)
+    setStatusSuccess('')
     setUpdatingTicketIds((current) => ({ ...current, [ticketId]: true }))
 
     try {
@@ -78,10 +87,56 @@ export default function AdminTickets() {
         userId: currentUserId,
       })
       await loadTickets()
+      setStatusSuccess('Statusul tichetului a fost actualizat.')
     } catch {
       setStatusError('Nu am putut actualiza statusul ticketului.')
     } finally {
       setUpdatingTicketIds((current) => ({ ...current, [ticketId]: false }))
+    }
+  }
+
+
+  const handleRerouteFieldChange = (ticketId, field, value) => {
+    setRerouteByTicket((current) => ({
+      ...current,
+      [ticketId]: {
+        ...(current[ticketId] || {}),
+        [field]: value,
+      },
+    }))
+  }
+
+  const handleRerouteTicket = async (ticket) => {
+    const draft = rerouteByTicket[ticket.id] || {}
+
+    if (!draft.departmentId) {
+      setStatusError('Selectează departamentul către care vrei să redirecționezi tichetul.')
+      return
+    }
+
+    setStatusError(null)
+    setStatusSuccess('')
+    setRerouteLoadingByTicket((current) => ({ ...current, [ticket.id]: true }))
+
+    try {
+      await rerouteTicket({
+        ticketId: ticket.id,
+        newDepartmentId: draft.departmentId,
+        reason: draft.reason || '',
+        userId: currentUserId,
+      })
+
+      await loadTickets()
+      setRerouteByTicket((current) => ({
+        ...current,
+        [ticket.id]: { departmentId: '', reason: '' },
+      }))
+      setStatusError('')
+      setStatusSuccess('Tichetul a fost redirecționat cu succes.')
+    } catch (error) {
+      setStatusError(error?.message || 'Nu am putut redirecționa tichetul.')
+    } finally {
+      setRerouteLoadingByTicket((current) => ({ ...current, [ticket.id]: false }))
     }
   }
 
@@ -128,6 +183,7 @@ export default function AdminTickets() {
         <h1 className="text-xl font-bold text-slate-900">Toate ticketele</h1>
         <p className="mt-1 text-sm text-slate-500">Vizualizează și gestionează toate ticketele din platformă.</p>
         {statusError && <p className="mt-2 text-sm text-red-600">{statusError}</p>}
+        {statusSuccess && <p className="mt-2 text-sm text-emerald-700">{statusSuccess}</p>}
       </header>
 
       <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -203,14 +259,42 @@ export default function AdminTickets() {
           <p className="text-sm text-slate-500">{filteredTickets.length} tichete afișate.</p>
           <div className="flex flex-col gap-3 md:hidden">
             {filteredTickets.map((ticket) => (
-              <TicketCard
-                key={ticket.id}
-                ticket={ticket}
-                showCreatedBy
-                onStatusChange={handleStatusChange}
-                isStatusUpdating={Boolean(updatingTicketIds[ticket.id])}
-                canEditStatus
-              />
+              <div key={ticket.id} className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+                <TicketCard
+                  ticket={ticket}
+                  showCreatedBy
+                  onStatusChange={handleStatusChange}
+                  isStatusUpdating={Boolean(updatingTicketIds[ticket.id])}
+                  canEditStatus
+                />
+                <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                  <select
+                    value={rerouteByTicket[ticket.id]?.departmentId || ''}
+                    onChange={(event) => handleRerouteFieldChange(ticket.id, 'departmentId', event.target.value)}
+                    className="min-h-10 rounded-lg border border-slate-300 bg-white px-2 text-sm text-slate-700 sm:col-span-1"
+                  >
+                    <option value="">Departament nou</option>
+                    {departments.map((department) => (
+                      <option key={department.id} value={department.id}>{department.name}</option>
+                    ))}
+                  </select>
+                  <input
+                    type="text"
+                    value={rerouteByTicket[ticket.id]?.reason || ''}
+                    onChange={(event) => handleRerouteFieldChange(ticket.id, 'reason', event.target.value)}
+                    placeholder="Motiv redirecționare"
+                    className="min-h-10 rounded-lg border border-slate-300 px-2 text-sm sm:col-span-2"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleRerouteTicket(ticket)}
+                    disabled={Boolean(rerouteLoadingByTicket[ticket.id])}
+                    className="min-h-10 rounded-lg bg-slate-900 px-3 text-sm font-medium text-white disabled:opacity-60 sm:col-span-3"
+                  >
+                    {rerouteLoadingByTicket[ticket.id] ? 'Se redirecționează...' : 'Redirecționează tichetul'}
+                  </button>
+                </div>
+              </div>
             ))}
           </div>
           <AdminTicketTable
@@ -221,6 +305,11 @@ export default function AdminTickets() {
             showAction
             dateColumnLabel="Creat / actualizat"
             showCreatedUpdated
+            departments={departments}
+            onRerouteTicket={handleRerouteTicket}
+            rerouteByTicket={rerouteByTicket}
+            onRerouteFieldChange={handleRerouteFieldChange}
+            rerouteLoadingByTicket={rerouteLoadingByTicket}
           />
         </>
       )}

@@ -179,10 +179,15 @@ export async function updateTicketStatus({ ticketId, newStatus, userId, note }) 
   });
 }
 
-export async function rerouteTicket(ticketId, newDepartmentId, reason) {
+export async function rerouteTicket({ ticketId, newDepartmentId, reason, userId }) {
   if (useMocks()) {
     return { success: true };
   }
 
-  return api.put(`/ticket/${ticketId}/reroute`, { department_id: newDepartmentId, reason });
+  return api.post('/reroute-ticket', {
+    ticket_id: ticketId,
+    new_department_id: newDepartmentId,
+    reason,
+    user_id: userId,
+  });
 }
