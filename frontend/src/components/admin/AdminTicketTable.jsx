@@ -25,6 +25,11 @@ export default function AdminTicketTable({
   showAction = false,
   dateColumnLabel = 'Actualizat',
   showCreatedUpdated = false,
+  departments = [],
+  rerouteByTicket = {},
+  rerouteLoadingByTicket = {},
+  onRerouteFieldChange,
+  onRerouteTicket,
 }) {
   const navigate = useNavigate()
 
@@ -116,17 +121,46 @@ export default function AdminTicketTable({
                   )}
                 </td>
                 {showAction && (
-                  <td className="px-4 py-3 text-right">
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation()
-                        navigate(`/tickets/${ticket.id}`)
-                      }}
-                      className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-100"
-                    >
-                      Vezi
-                    </button>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-col items-end gap-2">
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          navigate(`/tickets/${ticket.id}`)
+                        }}
+                        className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-100"
+                      >
+                        Vezi
+                      </button>
+
+                      <select
+                        value={rerouteByTicket[ticket.id]?.departmentId || ''}
+                        onClick={(event) => event.stopPropagation()}
+                        onChange={(event) => {
+                          event.stopPropagation()
+                          onRerouteFieldChange?.(ticket.id, 'departmentId', event.target.value)
+                        }}
+                        className="min-h-[34px] rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700"
+                      >
+                        <option value="">Dep. nou</option>
+                        {departments.map((department) => (
+                          <option key={department.id} value={department.id}>{department.name}</option>
+                        ))}
+                      </select>
+
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          onRerouteTicket?.(ticket)
+                        }}
+                        disabled={Boolean(rerouteLoadingByTicket[ticket.id])}
+                        className="rounded-lg bg-slate-900 px-2.5 py-1.5 text-xs font-medium text-white disabled:opacity-60"
+                      >
+                        {rerouteLoadingByTicket[ticket.id] ? 'Se redirecționează...' : 'Redirecționează'}
+                      </button>
+                    </div>
                   </td>
                 )}
               </tr>
