@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { apiRequest } from '../api/client'
 import { getDepartments } from '../api/departments'
 import {
-  createRoutingRule,
   deleteRoutingRule,
   getRoutingRules,
   updateRoutingRule,
@@ -156,7 +156,14 @@ export default function AdminRoutingRules() {
         await updateRoutingRule(payload, userId)
         setSuccessMessage('Regula de rutare a fost actualizată.')
       } else {
-        await createRoutingRule(payload, userId)
+        await apiRequest('/routing-rules', {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'create',
+            user_id: user?.id ?? userId,
+            rule_data: payload,
+          }),
+        })
         setSuccessMessage('Regula de rutare a fost creată.')
       }
 
