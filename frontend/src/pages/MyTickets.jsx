@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowUpDown, ClipboardList, PlusCircle, Search } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import TicketCard from '../components/tickets/TicketCard'
@@ -64,6 +64,7 @@ export default function MyTickets() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState(null)
   const [sortDir, setSortDir] = useState('desc')
+  const hasLoadedTicketsRef = useRef(false)
 
   const loadTickets = useCallback(async () => {
     try {
@@ -78,6 +79,8 @@ export default function MyTickets() {
   }, [role])
 
   useEffect(() => {
+    if (hasLoadedTicketsRef.current) return
+    hasLoadedTicketsRef.current = true
     loadTickets()
   }, [loadTickets])
 
