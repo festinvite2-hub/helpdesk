@@ -34,29 +34,46 @@ function extractRoutingRules(response) {
   return Array.isArray(list) ? list.map(normalizeRoutingRule) : [];
 }
 
-export async function getRoutingRules() {
+function requireUserId(userId) {
+  if (!userId) {
+    throw new Error('Nu am putut identifica utilizatorul curent.');
+  }
+
+  return userId;
+}
+
+export async function getRoutingRules(userId) {
   if (useMocks()) {
     return MOCK_ROUTING_RULES;
   }
 
+  const resolvedUserId = requireUserId(userId);
+
   const response = await apiRequest('/routing-rules', {
     method: 'POST',
-    body: JSON.stringify({ action: 'list' }),
+    body: JSON.stringify({
+      action: 'list',
+      user_id: resolvedUserId,
+    }),
   });
 
   return extractRoutingRules(response);
 }
+
+export const listRoutingRules = getRoutingRules;
 
 export async function createRoutingRule(ruleData, userId) {
   if (useMocks()) {
     return { success: true, rule: { id: `r${Date.now()}`, ...ruleData } };
   }
 
+  const resolvedUserId = requireUserId(userId);
+
   return apiRequest('/routing-rules', {
     method: 'POST',
     body: JSON.stringify({
       action: 'create',
-      user_id: userId,
+      user_id: resolvedUserId,
       rule_data: ruleData,
     }),
   });
@@ -67,11 +84,13 @@ export async function updateRoutingRule(ruleData, userId) {
     return { success: true, rule: { ...ruleData } };
   }
 
+  const resolvedUserId = requireUserId(userId);
+
   return apiRequest('/routing-rules', {
     method: 'POST',
     body: JSON.stringify({
       action: 'update',
-      user_id: userId,
+      user_id: resolvedUserId,
       rule_data: ruleData,
     }),
   });
@@ -82,11 +101,13 @@ export async function deleteRoutingRule(ruleId, userId) {
     return { success: true };
   }
 
+  const resolvedUserId = requireUserId(userId);
+
   return apiRequest('/routing-rules', {
     method: 'POST',
     body: JSON.stringify({
       action: 'delete',
-      user_id: userId,
+      user_id: resolvedUserId,
       rule_data: { id: ruleId },
     }),
   });

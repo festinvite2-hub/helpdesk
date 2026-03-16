@@ -46,7 +46,7 @@ export default function AdminRoutingRules() {
 
     try {
       const [rulesResponse, departmentsResponse] = await Promise.all([
-        getRoutingRules(),
+        getRoutingRules(userId),
         getDepartments(),
       ])
 
@@ -58,7 +58,7 @@ export default function AdminRoutingRules() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [userId])
 
   useEffect(() => {
     loadData()
