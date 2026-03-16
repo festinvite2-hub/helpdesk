@@ -18,6 +18,7 @@ const PRIORITY_OPTIONS = [
 ]
 
 const initialForm = {
+  id: null,
   name: '',
   keywords: '',
   targetDepartmentId: '',
@@ -72,8 +73,9 @@ export default function AdminRoutingRules() {
   const openCreateForm = () => {
     const nextOrder = sortedRules.length ? Math.max(...sortedRules.map((rule) => Number(rule.sort_order || 0))) + 1 : 1
 
+    setError('')
     setEditingRule(null)
-    setFormData({ ...initialForm, sort_order: nextOrder })
+    setFormData({ ...initialForm, id: null, sort_order: nextOrder })
     setIsFormOpen(true)
     setSuccessMessage('')
   }
@@ -81,6 +83,7 @@ export default function AdminRoutingRules() {
   const openEditForm = (rule) => {
     setEditingRule(rule)
     setFormData({
+      id: rule.id ?? null,
       name: rule.name ?? '',
       keywords: Array.isArray(rule.keywords) ? rule.keywords.join(', ') : '',
       targetDepartmentId: rule.target_department?.id ? String(rule.target_department.id) : '',
@@ -130,8 +133,11 @@ export default function AdminRoutingRules() {
     setSaving(true)
     setError('')
 
+    const isUpdate = Boolean(editingRule?.id || formData.id)
+    const ruleId = editingRule?.id ?? formData.id ?? null
+
     const payload = {
-      ...(editingRule?.id ? { id: editingRule.id } : {}),
+      id: isUpdate ? ruleId : null,
       name: formData.name.trim(),
       rule_type: editingRule?.rule_type || 'keyword',
       keywords,
@@ -146,7 +152,7 @@ export default function AdminRoutingRules() {
     }
 
     try {
-      if (editingRule?.id) {
+      if (isUpdate) {
         await updateRoutingRule(payload, userId)
         setSuccessMessage('Regula de rutare a fost actualizată.')
       } else {
@@ -211,7 +217,7 @@ export default function AdminRoutingRules() {
 
       {isFormOpen && (
         <form onSubmit={handleSubmit} className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h2 className="text-base font-semibold text-slate-900">{editingRule ? 'Editează regulă' : 'Adaugă regulă'}</h2>
+          <h2 className="text-base font-semibold text-slate-900">{editingRule ? 'Editează regulă' : 'Regulă nouă'}</h2>
 
           <label className="block text-sm font-medium text-slate-700">
             Nume regulă
