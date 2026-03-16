@@ -60,7 +60,12 @@ export default function AdminTickets() {
             ? ticketsResult.data.tickets
             : []
 
-      setTickets(allTickets)
+      const normalizedTickets = allTickets.map((ticket) => ({
+        ...ticket,
+        department: ticket.department ?? ticket.departament ?? ticket.department_name ?? ticket.departmentName ?? '',
+      }))
+
+      setTickets(normalizedTickets)
 
       const departmentsResult = await getDepartments()
       setDepartments(Array.isArray(departmentsResult) ? departmentsResult : [])
