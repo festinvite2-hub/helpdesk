@@ -141,11 +141,7 @@ export default function AdminRoutingRules() {
       name: formData.name.trim(),
       rule_type: editingRule?.rule_type || 'keyword',
       keywords,
-      target_department: {
-        id: targetDepartment.id,
-        name: targetDepartment.name,
-        color: targetDepartment.color,
-      },
+      target_department_id: String(targetDepartment.id),
       priority_override: formData.priority_override || null,
       sort_order: Number(formData.sort_order || 0),
       is_active: formData.is_active,
