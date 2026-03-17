@@ -159,9 +159,19 @@ export function useAuth() {
 export function RoleGuard({ children }) {
   const { token, isAllowed, isMockMode, user } = useAuth()
   const location = useLocation()
+  const mustChangePassword = Boolean(user?.must_change_password)
+  const isChangePasswordRoute = location.pathname === '/change-password'
 
   if (!isMockMode && (!token || !user)) {
     return <Navigate to="/login" replace />
+  }
+
+  if (!isMockMode && mustChangePassword && !isChangePasswordRoute) {
+    return <Navigate to="/change-password" replace />
+  }
+
+  if (!isMockMode && !mustChangePassword && isChangePasswordRoute) {
+    return <Navigate to={getHomeRouteByRole(normalizeRole(user?.role))} replace />
   }
 
   if (!isAllowed(location.pathname)) {

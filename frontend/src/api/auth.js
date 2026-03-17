@@ -9,6 +9,8 @@ export async function login(email, password) {
         email: email || 'admin@helpdesk.local',
         full_name: 'Administrator Sistem',
         role: 'admin',
+        primary_department_id: null,
+        must_change_password: false,
         department: null,
       },
     };
@@ -24,11 +26,26 @@ export async function getProfile() {
       email: 'admin@helpdesk.local',
       full_name: 'Administrator Sistem',
       role: 'admin',
+      primary_department_id: null,
+      must_change_password: false,
       department: null,
     };
   }
 
   return api.get('/auth/profile');
+}
+
+
+export async function changePassword(userId, currentPassword, newPassword) {
+  if (useMocks()) {
+    return { success: true }
+  }
+
+  return api.post('/auth/change-password', {
+    user_id: userId,
+    current_password: currentPassword,
+    new_password: newPassword,
+  })
 }
 
 export function saveToken(token) {
