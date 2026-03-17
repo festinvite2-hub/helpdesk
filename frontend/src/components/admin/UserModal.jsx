@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react'
 import { ChevronDown, X } from 'lucide-react'
 import ToggleSwitch from '../common/ToggleSwitch'
-import { ROLE_OPTIONS } from '../../mocks/admin'
+
+const ROLE_OPTIONS = [
+  { value: 'user', label: 'Utilizator' },
+  { value: 'dept_manager', label: 'Responsabil' },
+  { value: 'admin', label: 'Administrator' },
+]
 
 const initialForm = {
   full_name: '',
@@ -11,7 +16,16 @@ const initialForm = {
   is_active: true,
 }
 
-export default function UserModal({ isOpen, user, departments, onClose, onSave, onDelete }) {
+export default function UserModal({
+  isOpen,
+  user,
+  departments,
+  onClose,
+  onSave,
+  onDelete,
+  error,
+  saving,
+}) {
   const [formData, setFormData] = useState(initialForm)
 
   useEffect(() => {
@@ -22,7 +36,7 @@ export default function UserModal({ isOpen, user, departments, onClose, onSave, 
         full_name: user.full_name,
         email: user.email,
         role: user.role,
-        departmentId: user.department?.id ?? '',
+        departmentId: user.primary_department_id ?? user.department?.id ?? '',
         is_active: user.is_active,
       })
       return
@@ -45,7 +59,7 @@ export default function UserModal({ isOpen, user, departments, onClose, onSave, 
       email: formData.email.trim(),
       role: formData.role,
       department:
-        formData.role === 'responsible' && selectedDepartment
+        formData.role === 'dept_manager' && selectedDepartment
           ? {
               id: selectedDepartment.id,
               name: selectedDepartment.name,
@@ -116,7 +130,7 @@ export default function UserModal({ isOpen, user, departments, onClose, onSave, 
                         setFormData((current) => ({
                           ...current,
                           role: role.value,
-                          departmentId: role.value === 'responsible' ? current.departmentId : '',
+                          departmentId: role.value === 'dept_manager' ? current.departmentId : '',
                         }))
                       }
                       className={`min-h-[44px] rounded-lg px-2 text-xs font-medium transition-colors ${
@@ -130,7 +144,7 @@ export default function UserModal({ isOpen, user, departments, onClose, onSave, 
               </div>
             </div>
 
-            {formData.role === 'responsible' && (
+            {formData.role === 'dept_manager' && (
               <div>
                 <label htmlFor="user-department" className="mb-1 block text-sm font-medium text-slate-700">
                   Departament responsabil
@@ -164,17 +178,21 @@ export default function UserModal({ isOpen, user, departments, onClose, onSave, 
             </div>
           </div>
 
+          {error && <p className="mx-4 mb-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+
           <footer className="border-t border-slate-200 px-4 py-3">
             <button
               type="submit"
+              disabled={saving}
               className="min-h-[48px] w-full rounded-xl bg-blue-600 font-semibold text-white transition-all active:scale-[0.98] active:bg-blue-700"
             >
-              Salvează
+              {saving ? 'Se salvează...' : 'Salvează'}
             </button>
             {user && (
               <button
                 type="button"
                 onClick={() => onDelete(user)}
+                disabled={saving}
                 className="mt-2 min-h-[44px] w-full rounded-xl bg-red-50 font-medium text-red-600 active:bg-red-100"
               >
                 Șterge utilizatorul

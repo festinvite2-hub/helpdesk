@@ -1,31 +1,34 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Plus, Search } from 'lucide-react'
 import ToggleSwitch from '../components/common/ToggleSwitch'
 import UserModal from '../components/admin/UserModal'
-import { MOCK_DEPARTMENTS_FULL, MOCK_USERS } from '../mocks/admin'
+import { useAuth } from '../context/AuthContext'
+import { createUser, deleteUser, getUsers, updateUser } from '../api/users'
+import { getDepartments } from '../api/departments'
 
 const roleFilters = [
   { value: 'all', label: 'Toți' },
   { value: 'user', label: 'Utilizatori' },
-  { value: 'responsible', label: 'Responsabili' },
+  { value: 'dept_manager', label: 'Responsabili' },
   { value: 'admin', label: 'Administratori' },
 ]
 
 const roleBadgeClasses = {
   user: 'bg-slate-100 text-slate-600',
-  responsible: 'bg-blue-100 text-blue-700',
+  dept_manager: 'bg-blue-100 text-blue-700',
   admin: 'bg-purple-100 text-purple-700',
 }
 
 const roleLabels = {
   user: 'Utilizator',
-  responsible: 'Responsabil',
+  dept_manager: 'Responsabil',
   admin: 'Administrator',
 }
 
-function getInitials(name) {
+function getInitials(name = '') {
   return name
     .split(' ')
+    .filter(Boolean)
     .map((word) => word[0])
     .join('')
     .toUpperCase()
@@ -33,18 +36,56 @@ function getInitials(name) {
 }
 
 export default function AdminUsers() {
-  const [users, setUsers] = useState(MOCK_USERS)
+  const { user } = useAuth()
+  const [users, setUsers] = useState([])
+  const [departments, setDepartments] = useState([])
   const [query, setQuery] = useState('')
   const [roleFilter, setRoleFilter] = useState('all')
   const [editingUser, setEditingUser] = useState(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [modalError, setModalError] = useState('')
+  const [saving, setSaving] = useState(false)
 
-  const activeUsers = users.filter((user) => user.is_active).length
+  const userId = user?.id ?? user?.user_id ?? user?.userId
+
+  const loadUsers = useCallback(async () => {
+    if (!userId) {
+      setUsers([])
+      setLoading(false)
+      setError('Nu am putut identifica utilizatorul curent.')
+      return
+    }
+
+    setLoading(true)
+    setError('')
+
+    try {
+      const [usersResult, departmentsResult] = await Promise.all([
+        getUsers(userId),
+        getDepartments(),
+      ])
+      setUsers(Array.isArray(usersResult) ? usersResult : [])
+      setDepartments(Array.isArray(departmentsResult) ? departmentsResult : [])
+    } catch (loadError) {
+      setError(loadError?.message || 'Nu s-au putut încărca utilizatorii.')
+      setUsers([])
+    } finally {
+      setLoading(false)
+    }
+  }, [userId])
+
+  useEffect(() => {
+    loadUsers()
+  }, [loadUsers])
+
+  const activeUsers = users.filter((entry) => entry.is_active).length
 
   const filteredUsers = useMemo(() => {
-    return users.filter((user) => {
-      const matchesRole = roleFilter === 'all' || user.role === roleFilter
-      const searchValue = `${user.full_name} ${user.email}`.toLowerCase()
+    return users.filter((entry) => {
+      const matchesRole = roleFilter === 'all' || entry.role === roleFilter
+      const searchValue = `${entry.full_name} ${entry.email}`.toLowerCase()
       const matchesSearch = searchValue.includes(query.trim().toLowerCase())
 
       return matchesRole && matchesSearch
@@ -52,38 +93,102 @@ export default function AdminUsers() {
   }, [users, roleFilter, query])
 
   const handleOpenCreate = () => {
+    setModalError('')
     setEditingUser(null)
     setIsModalOpen(true)
   }
 
-  const handleOpenEdit = (user) => {
-    setEditingUser(user)
+  const handleOpenEdit = (entry) => {
+    setModalError('')
+    setEditingUser(entry)
     setIsModalOpen(true)
   }
 
-  const handleSave = (payload) => {
-    if (editingUser) {
-      setUsers((current) => current.map((user) => (user.id === editingUser.id ? { ...user, ...payload } : user)))
-      setIsModalOpen(false)
+  const handleSave = async (payload) => {
+    if (!userId) {
+      setModalError('Nu am putut identifica utilizatorul curent.')
       return
     }
 
-    setUsers((current) => [
-      {
-        id: `u${Date.now()}`,
-        created_at: new Date().toISOString().slice(0, 10),
-        ...payload,
-      },
-      ...current,
-    ])
-    setIsModalOpen(false)
+    setSaving(true)
+    setModalError('')
+
+    const userData = {
+      ...(editingUser ? { id: editingUser.id } : {}),
+      full_name: payload.full_name,
+      email: payload.email,
+      role: payload.role,
+      primary_department_id: payload.department?.id || null,
+      is_active: payload.is_active,
+    }
+
+    try {
+      if (editingUser) {
+        const updatedUser = await updateUser(userData, userId)
+        setUsers((current) =>
+          current.map((entry) => (entry.id === editingUser.id ? updatedUser : entry)),
+        )
+      } else {
+        const createdUser = await createUser(userData, userId)
+        setUsers((current) => [createdUser, ...current])
+      }
+
+      setIsModalOpen(false)
+      setEditingUser(null)
+    } catch (saveError) {
+      setModalError(saveError?.message || 'A apărut o eroare la salvarea utilizatorului.')
+    } finally {
+      setSaving(false)
+    }
   }
 
-  const handleDelete = (user) => {
-    if (!window.confirm(`Sigur dorești să ștergi utilizatorul „${user.full_name}”?`)) return
+  const handleDelete = async (entry) => {
+    if (!window.confirm(`Sigur dorești să dezactivezi utilizatorul „${entry.full_name}”?`)) return
 
-    setUsers((current) => current.filter((item) => item.id !== user.id))
-    setIsModalOpen(false)
+    if (!userId) {
+      setModalError('Nu am putut identifica utilizatorul curent.')
+      return
+    }
+
+    setSaving(true)
+    setModalError('')
+
+    try {
+      await deleteUser(entry.id, userId)
+      setUsers((current) =>
+        current.map((item) => (item.id === entry.id ? { ...item, is_active: false } : item)),
+      )
+      setIsModalOpen(false)
+    } catch (deleteError) {
+      setModalError(deleteError?.message || 'Nu am putut dezactiva utilizatorul.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleToggleStatus = async (entry, nextValue) => {
+    if (!userId) {
+      setError('Nu am putut identifica utilizatorul curent.')
+      return
+    }
+
+    setError('')
+
+    const payload = {
+      id: entry.id,
+      full_name: entry.full_name,
+      email: entry.email,
+      role: entry.role,
+      primary_department_id: entry.primary_department_id || null,
+      is_active: nextValue,
+    }
+
+    try {
+      const updatedUser = await updateUser(payload, userId)
+      setUsers((current) => current.map((item) => (item.id === entry.id ? updatedUser : item)))
+    } catch (toggleError) {
+      setError(toggleError?.message || 'Nu am putut actualiza statusul utilizatorului.')
+    }
   }
 
   return (
@@ -102,6 +207,8 @@ export default function AdminUsers() {
           Adaugă
         </button>
       </header>
+
+      {error && <p className="mb-4 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
       <div className="mb-4 md:flex md:items-center md:gap-4">
         <div className="relative md:flex-1">
@@ -135,66 +242,71 @@ export default function AdminUsers() {
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 md:grid md:grid-cols-2 md:gap-4">
-        {filteredUsers.map((user) => (
-          <article
-            key={user.id}
-            className={`rounded-xl border border-slate-200 bg-white p-4 shadow-sm ${user.is_active ? '' : 'opacity-50'}`}
-          >
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center">
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-200 text-sm font-semibold text-slate-600">
-                  {getInitials(user.full_name)}
+      {loading ? (
+        <p className="rounded-xl border border-slate-200 bg-white px-3 py-4 text-sm text-slate-500">Se încarcă utilizatorii...</p>
+      ) : (
+        <div className="flex flex-col gap-3 md:grid md:grid-cols-2 md:gap-4">
+          {filteredUsers.map((entry) => (
+            <article
+              key={entry.id}
+              className={`rounded-xl border border-slate-200 bg-white p-4 shadow-sm ${entry.is_active ? '' : 'opacity-50'}`}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-200 text-sm font-semibold text-slate-600">
+                    {getInitials(entry.full_name)}
+                  </div>
+                  <h2 className="ml-3 text-sm font-semibold">{entry.full_name}</h2>
                 </div>
-                <h2 className="ml-3 text-sm font-semibold">{user.full_name}</h2>
+                <ToggleSwitch
+                  enabled={entry.is_active}
+                  onChange={(nextValue) => handleToggleStatus(entry, nextValue)}
+                  label={`Stare utilizator ${entry.full_name}`}
+                />
               </div>
-              <ToggleSwitch
-                enabled={user.is_active}
-                onChange={(nextValue) =>
-                  setUsers((current) =>
-                    current.map((item) => (item.id === user.id ? { ...item, is_active: nextValue } : item)),
-                  )
-                }
-                label={`Stare utilizator ${user.full_name}`}
-              />
-            </div>
 
-            <p className="ml-12 mt-0.5 text-xs text-slate-400">{user.email}</p>
+              <p className="ml-12 mt-0.5 text-xs text-slate-400">{entry.email}</p>
 
-            <div className="ml-12 mt-2 flex gap-2">
-              <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${roleBadgeClasses[user.role]}`}>
-                {roleLabels[user.role]}
-              </span>
-              {user.department && (
-                <span
-                  className="rounded-full px-2.5 py-1 text-xs font-medium text-white"
-                  style={{ backgroundColor: user.department.color }}
-                >
-                  ● {user.department.name}
+              <div className="ml-12 mt-2 flex flex-wrap gap-2">
+                <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${roleBadgeClasses[entry.role] || roleBadgeClasses.user}`}>
+                  {roleLabels[entry.role] || roleLabels.user}
                 </span>
-              )}
-            </div>
+                {entry.department && (
+                  <span
+                    className="rounded-full px-2.5 py-1 text-xs font-medium text-white"
+                    style={{ backgroundColor: entry.department.color }}
+                  >
+                    ● {entry.department.name}
+                  </span>
+                )}
+                <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${entry.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'}`}>
+                  {entry.is_active ? 'Activ' : 'Inactiv'}
+                </span>
+              </div>
 
-            <div className="mt-3 border-t border-slate-100 pt-3">
-              <button
-                type="button"
-                onClick={() => handleOpenEdit(user)}
-                className="flex min-h-[40px] w-full items-center justify-center rounded-lg bg-slate-100 text-sm font-medium text-slate-700 transition-colors active:bg-slate-200"
-              >
-                Editează
-              </button>
-            </div>
-          </article>
-        ))}
-      </div>
+              <div className="mt-3 border-t border-slate-100 pt-3">
+                <button
+                  type="button"
+                  onClick={() => handleOpenEdit(entry)}
+                  className="flex min-h-[40px] w-full items-center justify-center rounded-lg bg-slate-100 text-sm font-medium text-slate-700 transition-colors active:bg-slate-200"
+                >
+                  Editează
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
 
       <UserModal
         isOpen={isModalOpen}
         user={editingUser}
-        departments={MOCK_DEPARTMENTS_FULL}
+        departments={departments}
         onClose={() => setIsModalOpen(false)}
         onSave={handleSave}
         onDelete={handleDelete}
+        error={modalError}
+        saving={saving}
       />
     </section>
   )
