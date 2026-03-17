@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Plus, Search } from 'lucide-react'
-import ToggleSwitch from '../components/common/ToggleSwitch'
 import UserModal from '../components/admin/UserModal'
 import { useAuth } from '../context/AuthContext'
 import { createUser, deleteUser, getUsers, updateUser } from '../api/users'
@@ -166,31 +165,6 @@ export default function AdminUsers() {
     }
   }
 
-  const handleToggleStatus = async (entry, nextValue) => {
-    if (!userId) {
-      setError('Nu am putut identifica utilizatorul curent.')
-      return
-    }
-
-    setError('')
-
-    const payload = {
-      id: entry.id,
-      full_name: entry.full_name,
-      email: entry.email,
-      role: entry.role,
-      primary_department_id: entry.primary_department_id || null,
-      is_active: nextValue,
-    }
-
-    try {
-      const updatedUser = await updateUser(payload, userId)
-      setUsers((current) => current.map((item) => (item.id === entry.id ? updatedUser : item)))
-    } catch (toggleError) {
-      setError(toggleError?.message || 'Nu am putut actualiza statusul utilizatorului.')
-    }
-  }
-
   return (
     <section className="w-full">
       <header className="mb-4 flex items-center justify-between gap-2">
@@ -251,18 +225,13 @@ export default function AdminUsers() {
               key={entry.id}
               className={`rounded-xl border border-slate-200 bg-white p-4 shadow-sm ${entry.is_active ? '' : 'opacity-50'}`}
             >
-              <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
                 <div className="flex items-center">
                   <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-200 text-sm font-semibold text-slate-600">
                     {getInitials(entry.full_name)}
                   </div>
                   <h2 className="ml-3 text-sm font-semibold">{entry.full_name}</h2>
                 </div>
-                <ToggleSwitch
-                  enabled={entry.is_active}
-                  onChange={(nextValue) => handleToggleStatus(entry, nextValue)}
-                  label={`Stare utilizator ${entry.full_name}`}
-                />
               </div>
 
               <p className="ml-12 mt-0.5 text-xs text-slate-400">{entry.email}</p>
