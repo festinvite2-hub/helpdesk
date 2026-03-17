@@ -11,6 +11,7 @@ const ROLE_OPTIONS = [
 const initialForm = {
   full_name: '',
   email: '',
+  password: '',
   role: 'user',
   departmentId: '',
   is_active: true,
@@ -27,6 +28,9 @@ export default function UserModal({
   saving,
 }) {
   const [formData, setFormData] = useState(initialForm)
+  const [validationError, setValidationError] = useState('')
+
+  const isEditing = Boolean(user)
 
   useEffect(() => {
     if (!isOpen) return
@@ -35,14 +39,17 @@ export default function UserModal({
       setFormData({
         full_name: user.full_name,
         email: user.email,
+        password: '',
         role: user.role,
         departmentId: user.primary_department_id ?? user.department?.id ?? '',
         is_active: user.is_active,
       })
+      setValidationError('')
       return
     }
 
     setFormData(initialForm)
+    setValidationError('')
   }, [isOpen, user])
 
   if (!isOpen) return null
@@ -52,11 +59,26 @@ export default function UserModal({
 
     if (!formData.full_name.trim() || !formData.email.trim()) return
 
+    if (!isEditing) {
+      if (!formData.password.trim()) {
+        setValidationError('Parola temporară este obligatorie.')
+        return
+      }
+
+      if (formData.password.length < 6) {
+        setValidationError('Parola temporară trebuie să aibă cel puțin 6 caractere.')
+        return
+      }
+    }
+
+    setValidationError('')
+
     const selectedDepartment = departments.find((department) => department.id === formData.departmentId)
 
     onSave({
       full_name: formData.full_name.trim(),
       email: formData.email.trim(),
+      ...(isEditing ? {} : { password: formData.password }),
       role: formData.role,
       department:
         formData.role === 'dept_manager' && selectedDepartment
@@ -111,10 +133,34 @@ export default function UserModal({
                 type="email"
                 required
                 value={formData.email}
-                onChange={(event) => setFormData((current) => ({ ...current, email: event.target.value }))}
+                onChange={(event) => {
+                  setValidationError('')
+                  setFormData((current) => ({ ...current, email: event.target.value }))
+                }}
                 className="w-full min-h-[44px] rounded-xl border border-slate-300 px-4 py-2.5 text-base outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
               />
             </div>
+
+            {!isEditing && (
+              <div>
+                <label htmlFor="user-password" className="mb-1 block text-sm font-medium text-slate-700">
+                  Parolă temporară
+                </label>
+                <input
+                  id="user-password"
+                  type="password"
+                  required
+                  minLength={6}
+                  placeholder="Introdu parola temporară"
+                  value={formData.password}
+                  onChange={(event) => {
+                    setValidationError('')
+                    setFormData((current) => ({ ...current, password: event.target.value }))
+                  }}
+                  className="w-full min-h-[44px] rounded-xl border border-slate-300 px-4 py-2.5 text-base outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            )}
 
             <div>
               <p className="mb-1 text-sm font-medium text-slate-700">Rol</p>
@@ -178,7 +224,11 @@ export default function UserModal({
             </div>
           </div>
 
-          {error && <p className="mx-4 mb-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+          {(validationError || error) && (
+            <p className="mx-4 mb-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">
+              {validationError || error}
+            </p>
+          )}
 
           <footer className="border-t border-slate-200 px-4 py-3">
             <button
