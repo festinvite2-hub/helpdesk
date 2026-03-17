@@ -62,7 +62,7 @@ export default function AdminTickets() {
 
       const normalizedTickets = allTickets.map((ticket) => ({
         ...ticket,
-        department: ticket.department ?? ticket.departament ?? ticket.department_name ?? ticket.departmentName ?? '',
+        department: typeof ticket.department === 'string' ? ticket.department : '',
       }))
 
       setTickets(normalizedTickets)
