@@ -82,7 +82,7 @@ export default function TicketCard({
           className="rounded-full px-2 py-0.5 text-xs font-medium text-white"
           style={{ backgroundColor: ticket.department_color }}
         >
-          {ticket.department}
+          {ticket.department || 'Nesetat'}
         </span>
         <span className="ml-auto text-xs text-slate-400">{timeAgo(ticket.created_at)}</span>
       </div>

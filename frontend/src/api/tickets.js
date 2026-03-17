@@ -34,6 +34,42 @@ function normalizeRole(role) {
   return 'user';
 }
 
+function pickDepartment(ticket) {
+  const departmentCandidates = [
+    ticket?.department,
+    ticket?.department_name,
+    ticket?.departmentName,
+    ticket?.department?.name,
+  ];
+
+  const department = departmentCandidates.find((value) => typeof value === 'string' && value.trim().length > 0);
+  return department ?? '';
+}
+
+function normalizeTicket(ticket) {
+  if (!ticket || typeof ticket !== 'object') return ticket;
+
+  return {
+    ...ticket,
+    department: pickDepartment(ticket),
+  };
+}
+
+function normalizeTicketsResult(result) {
+  if (Array.isArray(result)) {
+    return { success: true, tickets: result.map(normalizeTicket) };
+  }
+
+  return {
+    success: result?.success ?? true,
+    tickets: Array.isArray(result?.tickets)
+      ? result.tickets.map(normalizeTicket)
+      : Array.isArray(result?.data?.tickets)
+        ? result.data.tickets.map(normalizeTicket)
+        : [],
+  };
+}
+
 export function createTicketMock(payload) {
   return new Promise((resolve) => {
     setTimeout(() => {
@@ -70,14 +106,7 @@ export async function getMyTickets(role) {
 
   const result = await api.get('/my-tickets', { skipAuth: true });
 
-  if (Array.isArray(result)) {
-    return { success: true, tickets: result };
-  }
-
-  return {
-    success: result?.success ?? true,
-    tickets: result?.tickets ?? [],
-  };
+  return normalizeTicketsResult(result);
 }
 
 export async function getInboxTickets(userId) {
@@ -88,14 +117,7 @@ export async function getInboxTickets(userId) {
   const query = new URLSearchParams({ user_id: String(userId) }).toString();
   const result = await api.get(`/inbox-tickets?${query}`);
 
-  if (Array.isArray(result)) {
-    return { success: true, tickets: result };
-  }
-
-  return {
-    success: result?.success ?? true,
-    tickets: Array.isArray(result?.tickets) ? result.tickets : [],
-  };
+  return normalizeTicketsResult(result);
 }
 
 export async function getAllTickets(userOrId) {
@@ -112,14 +134,7 @@ export async function getAllTickets(userOrId) {
   const query = new URLSearchParams({ user_id: String(userId) }).toString();
   const result = await api.get(`/all-tickets?${query}`);
 
-  if (Array.isArray(result)) {
-    return { success: true, tickets: result };
-  }
-
-  return {
-    success: result?.success ?? true,
-    tickets: Array.isArray(result?.tickets) ? result.tickets : [],
-  };
+  return normalizeTicketsResult(result);
 }
 
 export async function getTicketsByRole(role, userId) {
