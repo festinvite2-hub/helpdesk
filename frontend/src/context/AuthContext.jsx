@@ -17,6 +17,21 @@ import { useMocks } from '../api/client'
 
 export const AuthContext = createContext(null)
 
+function normalizeUser(user) {
+  if (!user) return null
+
+  const normalizedRole = normalizeRole(user.role)
+  const normalizedId = user.id ?? user.user_id ?? null
+
+  return {
+    ...user,
+    id: normalizedId,
+    email: user.email ?? '',
+    role: normalizedRole,
+    must_change_password: Boolean(user.must_change_password),
+  }
+}
+
 export function normalizeRole(role) {
   if (role === 'responsible') return 'dept_manager'
   if (role === 'dept_manager' || role === 'admin' || role === 'user') return role
@@ -82,7 +97,7 @@ export function AuthProvider({ children }) {
   const [realUser, setRealUser] = useState(() => {
     try {
       const stored = localStorage.getItem('helpdesk_user')
-      return stored ? JSON.parse(stored) : null
+      return stored ? normalizeUser(JSON.parse(stored)) : null
     } catch {
       return null
     }
@@ -90,10 +105,14 @@ export function AuthProvider({ children }) {
 
   const role = isMockMode ? mockRole : normalizeRole(realUser?.role)
   const user = isMockMode
-    ? { id: 'mock', full_name: 'Demo User', email: 'demo@test.com', role: normalizeRole(mockRole) }
+    ? {
+        id: 'mock',
+        full_name: 'Demo User',
+        email: 'demo@test.com',
+        role: normalizeRole(mockRole),
+        must_change_password: false,
+      }
     : realUser
-      ? { ...realUser, role }
-      : null
 
   const value = useMemo(
     () => ({
@@ -103,7 +122,7 @@ export function AuthProvider({ children }) {
       isMockMode,
       setRole: isMockMode ? setMockRole : () => {},
       setUser: (nextUser) => {
-        const normalizedUser = nextUser ? { ...nextUser, role: normalizeRole(nextUser.role) } : null
+        const normalizedUser = normalizeUser(nextUser)
         setRealUser(normalizedUser)
 
         if (normalizedUser) {
@@ -113,7 +132,7 @@ export function AuthProvider({ children }) {
         }
       },
       setAuthSession: (nextToken, nextUser) => {
-        const normalizedUser = nextUser ? { ...nextUser, role: normalizeRole(nextUser.role) } : null
+        const normalizedUser = normalizeUser(nextUser)
         setToken(nextToken || null)
         setRealUser(normalizedUser)
 

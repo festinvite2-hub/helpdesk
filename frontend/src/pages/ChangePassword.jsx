@@ -33,21 +33,41 @@ export default function ChangePassword() {
       return
     }
 
-    if (!user?.id) {
-      setError('Sesiune invalidă. Te rugăm să te autentifici din nou.')
+    if (!user || !user.id) {
+      setError('Utilizator invalid. Te rugăm să te reconectezi.')
       return
     }
+
+    const payload = {
+      user_id: user.id,
+      current_password: currentPassword,
+      new_password: newPassword,
+    }
+
+    console.log('USER:', user)
+    console.log('CHANGE PASSWORD PAYLOAD:', {
+      user_id: user?.id,
+      current_password: currentPassword,
+      new_password: newPassword,
+    })
 
     setIsLoading(true)
 
     try {
-      await changePassword(user.id, currentPassword, newPassword)
+      await changePassword(payload)
       const updatedUser = { ...user, must_change_password: false }
       setUser(updatedUser)
       setSuccess('Parola a fost schimbată cu succes.')
       navigate(getHomeRouteByRole(normalizeRole(updatedUser.role)), { replace: true })
     } catch (err) {
-      setError(err.message || 'Nu am putut schimba parola.')
+      const backendMessage =
+        err?.data?.message ||
+        err?.data?.error ||
+        err?.data?.detail ||
+        err?.data?.data?.message ||
+        err?.data?.data?.error
+
+      setError(backendMessage || err?.message || 'Nu am putut schimba parola.')
     } finally {
       setIsLoading(false)
     }
