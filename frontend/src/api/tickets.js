@@ -131,13 +131,21 @@ export async function createTicket(payload) {
   return api.post('/create-ticket', payload);
 }
 
-export async function getMyTickets(role) {
+export async function getMyTickets(userOrId, role = 'user') {
   if (useMocks()) {
     const tickets = role === 'dept_manager' || role === 'responsible' ? MOCK_MY_TICKETS_RESPONSIBLE : MOCK_MY_TICKETS_USER;
     return { success: true, tickets };
   }
 
-  const result = await api.get('/my-tickets', { skipAuth: true });
+  const userId = resolveUserId(userOrId);
+
+  if (!userId) {
+    return { success: true, tickets: [] };
+  }
+
+  const result = await api.post('/my-tickets', {
+    user_id: userId,
+  }, { skipAuth: true });
 
   return normalizeTicketsResult(result);
 }
@@ -181,7 +189,7 @@ export async function getTicketsByRole(role, userId) {
     return getInboxTickets(userId);
   }
 
-  return getMyTickets(normalizedRole);
+  return getMyTickets(userId, normalizedRole);
 }
 
 export async function getTicketDetail(ticketId) {
