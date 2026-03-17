@@ -72,7 +72,7 @@ export default function MyTickets() {
     }
 
     try {
-      const result = await getMyTickets(role)
+      const result = await getMyTickets(user, role)
       if (import.meta.env.DEV) {
         console.debug('[MyTickets] setAllTickets replacing list', result?.tickets || [])
       }
@@ -83,7 +83,7 @@ export default function MyTickets() {
     } finally {
       setLoading(false)
     }
-  }, [role])
+  }, [role, user])
 
   useEffect(() => {
     if (hasLoadedTicketsRef.current) return
