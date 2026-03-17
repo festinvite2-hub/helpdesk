@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { getAllTickets, rerouteTicket, updateTicketStatus } from '../api/tickets'
+import { enrichTicketsWithDepartments, getAllTickets, rerouteTicket, updateTicketStatus } from '../api/tickets'
 import AdminTicketTable from '../components/admin/AdminTicketTable'
 import TicketCard from '../components/tickets/TicketCard'
 import LoadingSkeleton from '../components/common/LoadingSkeleton'
@@ -51,7 +51,7 @@ export default function AdminTickets() {
     setLoadError(null)
 
     try {
-      const ticketsResult = await getAllTickets(currentUserId || user)
+      const [ticketsResult, departmentsResult] = await Promise.all([getAllTickets(currentUserId || user), getDepartments()])
       const allTickets = Array.isArray(ticketsResult)
         ? ticketsResult
         : Array.isArray(ticketsResult?.tickets)
@@ -60,10 +60,11 @@ export default function AdminTickets() {
             ? ticketsResult.data.tickets
             : []
 
-      setTickets(allTickets)
+      const allDepartments = Array.isArray(departmentsResult) ? departmentsResult : []
+      const enrichedTickets = enrichTicketsWithDepartments(allTickets, allDepartments)
 
-      const departmentsResult = await getDepartments()
-      setDepartments(Array.isArray(departmentsResult) ? departmentsResult : [])
+      setTickets(enrichedTickets)
+      setDepartments(allDepartments)
     } catch (error) {
       setLoadError(error?.message || 'Nu s-au putut încărca ticketele administratorului.')
     } finally {
