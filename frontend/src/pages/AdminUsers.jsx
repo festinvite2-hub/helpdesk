@@ -114,6 +114,7 @@ export default function AdminUsers() {
 
     const userData = {
       ...(editingUser ? { id: editingUser.id } : {}),
+      ...(!editingUser ? { password: payload.password } : {}),
       full_name: payload.full_name,
       email: payload.email,
       role: payload.role,
