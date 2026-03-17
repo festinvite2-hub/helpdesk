@@ -54,7 +54,7 @@ export default function UserModal({
 
   if (!isOpen) return null
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault()
 
     if (!formData.full_name.trim() || !formData.email.trim()) return
@@ -75,7 +75,7 @@ export default function UserModal({
 
     const selectedDepartment = departments.find((department) => department.id === formData.departmentId)
 
-    onSave({
+    const didSave = await onSave({
       full_name: formData.full_name.trim(),
       email: formData.email.trim(),
       ...(isEditing ? {} : { password: formData.password }),
@@ -90,6 +90,10 @@ export default function UserModal({
           : null,
       is_active: formData.is_active,
     })
+
+    if (!isEditing && didSave) {
+      setFormData((current) => ({ ...current, password: '' }))
+    }
   }
 
   return (

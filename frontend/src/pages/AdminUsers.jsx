@@ -106,7 +106,7 @@ export default function AdminUsers() {
   const handleSave = async (payload) => {
     if (!userId) {
       setModalError('Nu am putut identifica utilizatorul curent.')
-      return
+      return false
     }
 
     setSaving(true)
@@ -135,8 +135,10 @@ export default function AdminUsers() {
 
       setIsModalOpen(false)
       setEditingUser(null)
+      return true
     } catch (saveError) {
       setModalError(saveError?.message || 'A apărut o eroare la salvarea utilizatorului.')
+      return false
     } finally {
       setSaving(false)
     }
