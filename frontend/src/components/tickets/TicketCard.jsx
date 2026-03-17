@@ -34,6 +34,8 @@ export default function TicketCard({
     { value: 'closed', label: 'Închis' },
   ]
 
+  const hasDepartmentColor = Boolean(ticket.department_color)
+
   return (
     <Link
       to={`/tickets/${ticket.id}`}
@@ -79,8 +81,8 @@ export default function TicketCard({
           </span>
         )}
         <span
-          className="rounded-full px-2 py-0.5 text-xs font-medium text-white"
-          style={{ backgroundColor: ticket.department_color }}
+          className={`rounded-full px-2 py-0.5 text-xs font-medium ${hasDepartmentColor ? 'text-white' : 'bg-slate-100 text-slate-700'}`}
+          style={hasDepartmentColor ? { backgroundColor: ticket.department_color } : undefined}
         >
           {ticket.department || 'Nesetat'}
         </span>
