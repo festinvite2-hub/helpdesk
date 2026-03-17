@@ -36,15 +36,15 @@ export async function getProfile() {
 }
 
 
-export async function changePassword(userId, currentPassword, newPassword) {
+export async function changePassword(payload) {
   if (useMocks()) {
     return { success: true }
   }
 
   return api.post('/change-password', {
-    user_id: userId,
-    current_password: currentPassword,
-    new_password: newPassword,
+    user_id: payload.user_id,
+    current_password: payload.current_password,
+    new_password: payload.new_password,
   })
 }
 
