@@ -39,8 +39,14 @@ export default function Login() {
 
       if (result?.token && result?.user) {
         const normalizedRole = normalizeRole(result.user.role)
-        setAuthSession(result.token, { ...result.user, role: normalizedRole })
-        navigate(getHomeRouteByRole(normalizedRole))
+        const normalizedUser = { ...result.user, role: normalizedRole }
+        setAuthSession(result.token, normalizedUser)
+
+        if (normalizedUser.must_change_password) {
+          navigate('/change-password', { replace: true })
+        } else {
+          navigate(getHomeRouteByRole(normalizedRole), { replace: true })
+        }
       } else {
         setError(result?.error || 'Email sau parolă incorectă.')
       }

@@ -17,10 +17,14 @@ const AdminRoutingRules = lazy(() => import('./pages/AdminRoutingRules'))
 const AdminKnowledgeBase = lazy(() => import('./pages/AdminKnowledgeBase'))
 const AdminUsers = lazy(() => import('./pages/AdminUsers'))
 const AdminTickets = lazy(() => import('./pages/AdminTickets'))
-
+const ChangePassword = lazy(() => import('./pages/ChangePassword'))
 
 function RoleRedirect() {
-  const { role } = useAuth()
+  const { role, user } = useAuth()
+
+  if (user?.must_change_password) {
+    return <Navigate to="/change-password" replace />
+  }
 
   return <Navigate to={getHomeRouteByRole(role)} replace />
 }
@@ -34,6 +38,16 @@ function RoutesConfig() {
           <Suspense fallback={<LoadingSkeleton />}>
             <Login />
           </Suspense>
+        }
+      />
+      <Route
+        path="/change-password"
+        element={
+          <RoleGuard>
+            <Suspense fallback={<LoadingSkeleton />}>
+              <ChangePassword />
+            </Suspense>
+          </RoleGuard>
         }
       />
       <Route
