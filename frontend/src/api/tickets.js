@@ -35,24 +35,57 @@ function normalizeRole(role) {
 }
 
 function pickDepartment(ticket) {
-  const departmentCandidates = [
-    ticket?.department,
-    ticket?.department_name,
-    ticket?.departmentName,
-    ticket?.department?.name,
-  ];
+  return typeof ticket?.department === 'string' ? ticket.department : '';
+}
 
-  const department = departmentCandidates.find((value) => typeof value === 'string' && value.trim().length > 0);
-  return department ?? '';
+function isUuid(value) {
+  return typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
+function pickDepartmentId(ticket) {
+  const directDepartmentId = ticket?.department_id ?? ticket?.departmentId;
+  if (directDepartmentId) return String(directDepartmentId);
+
+  const departmentCandidate = ticket?.department;
+  if (isUuid(departmentCandidate)) return String(departmentCandidate);
+
+  return '';
 }
 
 function normalizeTicket(ticket) {
   if (!ticket || typeof ticket !== 'object') return ticket;
 
+  const department = pickDepartment(ticket);
+  const department_id = pickDepartmentId(ticket);
+
+  const normalizedDepartment = isUuid(department) ? '' : department;
+
   return {
     ...ticket,
-    department: pickDepartment(ticket),
+    department: normalizedDepartment,
+    department_id,
   };
+}
+
+export function enrichTicketsWithDepartments(tickets, departments) {
+  const departmentById = new Map(
+    (Array.isArray(departments) ? departments : [])
+      .filter((department) => department?.id)
+      .map((department) => [String(department.id), department.name || ''])
+  );
+
+  return (Array.isArray(tickets) ? tickets : []).map((ticket) => {
+    const normalizedTicket = normalizeTicket(ticket);
+    const departmentName = normalizedTicket.department?.trim();
+
+    if (departmentName) return normalizedTicket;
+
+    const mappedDepartment = departmentById.get(String(normalizedTicket.department_id || ''));
+    return {
+      ...normalizedTicket,
+      department: mappedDepartment || '',
+    };
+  });
 }
 
 function normalizeTicketsResult(result) {

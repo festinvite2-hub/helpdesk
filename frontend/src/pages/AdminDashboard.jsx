@@ -10,7 +10,7 @@ import {
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getAllTickets, updateTicketStatus } from '../api/tickets'
+import { enrichTicketsWithDepartments, getAllTickets, updateTicketStatus } from '../api/tickets'
 import { getDepartments } from '../api/departments'
 import TicketCard from '../components/tickets/TicketCard'
 import AdminTicketTable from '../components/admin/AdminTicketTable'
@@ -105,9 +105,11 @@ export default function AdminDashboard() {
             : Array.isArray(ticketsResult?.data?.tickets)
               ? ticketsResult.data.tickets
               : []
+      const allDepartments = Array.isArray(departmentsResult) ? departmentsResult : []
+      const enrichedTickets = enrichTicketsWithDepartments(tickets, allDepartments)
 
-      setAllTickets(tickets)
-      setDepartments(Array.isArray(departmentsResult) ? departmentsResult : [])
+      setAllTickets(enrichedTickets)
+      setDepartments(allDepartments)
       setLoadError(null)
     } catch (error) {
       setLoadError(error.message || 'Nu s-au putut încărca datele panoului de administrare.')
