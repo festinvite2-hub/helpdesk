@@ -60,6 +60,7 @@ export default function AdminTicketTable({
           {tickets.map((ticket) => {
             const priority = priorityMap[ticket.priority] ?? priorityMap.low
             const status = statusMap[ticket.status] ?? statusMap.open
+            const hasDepartmentColor = Boolean(ticket.department_color)
 
             return (
               <tr
@@ -72,8 +73,8 @@ export default function AdminTicketTable({
                 <td className="px-4 py-3 text-slate-600">{ticket.created_by ?? 'Utilizator'}</td>
                 <td className="px-4 py-3">
                   <span
-                    className="rounded-full px-2 py-1 text-xs font-medium text-white"
-                    style={{ backgroundColor: ticket.department_color }}
+                    className={`rounded-full px-2 py-1 text-xs font-medium ${hasDepartmentColor ? 'text-white' : 'bg-slate-100 text-slate-700'}`}
+                    style={hasDepartmentColor ? { backgroundColor: ticket.department_color } : undefined}
                   >
                     {ticket.department || 'Nesetat'}
                   </span>
