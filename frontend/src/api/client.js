@@ -49,8 +49,15 @@ export async function apiRequest(endpoint, options = {}) {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+      const backendMessage =
+        errorData?.message ||
+        errorData?.error ||
+        errorData?.detail ||
+        errorData?.data?.message ||
+        errorData?.data?.error;
+
       throw new ApiError(
-        errorData.message || `Eroare ${response.status}`,
+        backendMessage || `Eroare ${response.status}`,
         response.status,
         errorData,
       );

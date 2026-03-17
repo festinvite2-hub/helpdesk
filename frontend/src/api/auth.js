@@ -41,7 +41,7 @@ export async function changePassword(userId, currentPassword, newPassword) {
     return { success: true }
   }
 
-  return api.post('/auth/change-password', {
+  return api.post('/change-password', {
     user_id: userId,
     current_password: currentPassword,
     new_password: newPassword,
