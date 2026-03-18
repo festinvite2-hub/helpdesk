@@ -46,6 +46,8 @@ export default function TicketTable({ tickets = [], onStatusChange, updatingTick
           {tickets.map((ticket) => {
             const priority = priorityMap[ticket.priority] ?? priorityMap.low
             const status = statusMap[ticket.status] ?? statusMap.open
+            const categoryLabel = ticket.category || 'General'
+            const departmentLabel = ticket.department || 'Nesetat'
 
             return (
               <tr
@@ -55,7 +57,9 @@ export default function TicketTable({ tickets = [], onStatusChange, updatingTick
               >
                 <td className="px-4 py-3 font-mono text-xs text-slate-500">{ticket.ticket_number}</td>
                 <td className="px-4 py-3 font-medium text-slate-900">{ticket.title}</td>
-                <td className="px-4 py-3 text-slate-600">{ticket.category}</td>
+                <td className="px-4 py-3">
+                  <span className="text-sm text-gray-800">{categoryLabel}</span>
+                </td>
                 <td className="px-4 py-3">
                   <span className={`rounded-full px-2 py-1 text-xs font-medium ${priority.className}`}>
                     {priority.label}
@@ -89,12 +93,7 @@ export default function TicketTable({ tickets = [], onStatusChange, updatingTick
                   )}
                 </td>
                 <td className="px-4 py-3">
-                  <span
-                    className="rounded-full px-2 py-1 text-xs font-medium text-white"
-                    style={{ backgroundColor: ticket.department_color }}
-                  >
-                    {ticket.department}
-                  </span>
+                  <span className="text-sm text-gray-800">{departmentLabel}</span>
                 </td>
                 <td className="px-4 py-3 text-xs text-slate-500">{timeAgo(ticket.created_at)}</td>
               </tr>
