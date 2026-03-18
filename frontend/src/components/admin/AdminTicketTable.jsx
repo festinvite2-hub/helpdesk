@@ -17,6 +17,15 @@ const statusMap = {
   closed: { label: 'închis', className: 'bg-slate-100 text-slate-600' },
 }
 
+function getAssignedDisplay(ticket) {
+  const assignedLabel = ticket.assigned_to_name ?? ticket.assigned_to_email ?? ticket.assigned_to ?? 'Neasignat'
+
+  return {
+    label: assignedLabel,
+    isUnassigned: assignedLabel === 'Neasignat',
+  }
+}
+
 export default function AdminTicketTable({
   tickets,
   canEditStatus = false,
@@ -49,6 +58,7 @@ export default function AdminTicketTable({
             <th className="px-4 py-3">#</th>
             <th className="px-4 py-3">Titlu</th>
             <th className="px-4 py-3">De la</th>
+            <th className="px-4 py-3">ASIGNAT LA</th>
             <th className="px-4 py-3">Departament</th>
             <th className="px-4 py-3">Prioritate</th>
             <th className="px-4 py-3">Status</th>
@@ -61,6 +71,7 @@ export default function AdminTicketTable({
             const priority = priorityMap[ticket.priority] ?? priorityMap.low
             const status = statusMap[ticket.status] ?? statusMap.open
             const hasDepartmentColor = Boolean(ticket.department_color)
+            const assigned = getAssignedDisplay(ticket)
 
             return (
               <tr
@@ -71,6 +82,15 @@ export default function AdminTicketTable({
                 <td className="px-4 py-3 font-mono text-xs text-slate-500">{ticket.ticket_number}</td>
                 <td className="px-4 py-3 font-medium text-slate-900">{ticket.title}</td>
                 <td className="px-4 py-3 text-slate-600">{ticket.created_by_name ?? ticket.created_by_email ?? ticket.created_by ?? 'Utilizator'}</td>
+                <td className="px-4 py-3 text-slate-600">
+                  {assigned.isUnassigned ? (
+                    <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-500">
+                      {assigned.label}
+                    </span>
+                  ) : (
+                    assigned.label
+                  )}
+                </td>
                 <td className="px-4 py-3">
                   <span
                     className={`rounded-full px-2 py-1 text-xs font-medium ${hasDepartmentColor ? 'text-white' : 'bg-slate-100 text-slate-700'}`}
