@@ -81,6 +81,8 @@ function normalizeTicket(ticket) {
 
   return {
     ...ticket,
+    created_by_name: ticket.created_by_name ?? ticket.createdByName ?? '',
+    created_by_email: ticket.created_by_email ?? ticket.createdByEmail ?? '',
     department: normalizedDepartment,
     department_id,
   };
