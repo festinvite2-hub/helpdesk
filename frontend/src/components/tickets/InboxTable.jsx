@@ -17,7 +17,22 @@ const statusMap = {
   closed: { label: 'închis', className: 'bg-slate-100 text-slate-600' },
 }
 
-export default function InboxTable({ tickets, canEditStatus = false, onStatusChange, updatingTicketIds = {} }) {
+function getAssignedLabel(ticket, currentUserId) {
+  if (ticket.assigned_to && currentUserId && String(ticket.assigned_to) === String(currentUserId)) {
+    return { label: 'Tu', isCurrentUser: true }
+  }
+
+  return {
+    label: ticket.assigned_to_name ?? ticket.assigned_to_email ?? ticket.assigned_to ?? 'Neasignat',
+    isCurrentUser: false,
+  }
+}
+
+function getCreatedByLabel(ticket) {
+  return ticket.created_by_name ?? ticket.created_by_email ?? ticket.created_by
+}
+
+export default function InboxTable({ tickets, currentUserId, canEditStatus = false, onStatusChange, updatingTicketIds = {} }) {
   const navigate = useNavigate()
 
   const statusOptions = [
@@ -36,6 +51,7 @@ export default function InboxTable({ tickets, canEditStatus = false, onStatusCha
             <th className="px-4 py-3">#</th>
             <th className="px-4 py-3">Titlu</th>
             <th className="px-4 py-3">De la</th>
+            <th className="px-4 py-3">Asignat la</th>
             <th className="px-4 py-3">Categorie</th>
             <th className="px-4 py-3">Prioritate</th>
             <th className="px-4 py-3">Status</th>
@@ -46,6 +62,7 @@ export default function InboxTable({ tickets, canEditStatus = false, onStatusCha
           {tickets.map((ticket) => {
             const priority = priorityMap[ticket.priority] ?? priorityMap.low
             const status = statusMap[ticket.status] ?? statusMap.open
+            const assigned = getAssignedLabel(ticket, currentUserId)
 
             return (
               <tr
@@ -55,7 +72,14 @@ export default function InboxTable({ tickets, canEditStatus = false, onStatusCha
               >
                 <td className="px-4 py-3 font-mono text-xs text-slate-500">{ticket.ticket_number}</td>
                 <td className="px-4 py-3 font-medium text-slate-900">{ticket.title}</td>
-                <td className="px-4 py-3 text-slate-600">{ticket.created_by_name || ticket.created_by_email || ticket.created_by}</td>
+                <td className="px-4 py-3 text-slate-600">{getCreatedByLabel(ticket)}</td>
+                <td className="px-4 py-3 text-slate-600">
+                  <span
+                    className={assigned.isCurrentUser ? 'rounded-full bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700' : undefined}
+                  >
+                    {assigned.label}
+                  </span>
+                </td>
                 <td className="px-4 py-3 text-slate-600">{ticket.category}</td>
                 <td className="px-4 py-3">
                   <span className={`rounded-full px-2 py-1 text-xs font-medium ${priority.className}`}>
