@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import LoadingSkeleton from '../components/common/LoadingSkeleton'
 import TicketCard from '../components/tickets/TicketCard'
 import TicketTable from '../components/tickets/TicketTable'
-import { getAllTickets } from '../api/tickets'
+import { getMyTickets } from '../api/tickets'
 import { useAuth } from '../context/AuthContext'
 
 const statCards = [
@@ -43,8 +43,7 @@ export default function UserDashboard() {
   useEffect(() => {
     async function loadTickets() {
       try {
-        const currentUserId = user?.id ?? user?.user_id
-        const result = await getAllTickets(currentUserId)
+        const result = await getMyTickets(user, user?.role)
         setTickets(result?.tickets || [])
       } catch (err) {
         setError(err.message || 'Nu s-au putut încărca tichetele.')
@@ -54,7 +53,7 @@ export default function UserDashboard() {
     }
 
     loadTickets()
-  }, [user?.id, user?.user_id])
+  }, [user])
 
   const sortedTickets = [...tickets].sort(
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()

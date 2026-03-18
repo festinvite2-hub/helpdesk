@@ -34,6 +34,25 @@ function normalizeRole(role) {
   return 'user';
 }
 
+function buildTicketListPayload(userOrId, role = 'user') {
+  const userId = resolveUserId(userOrId);
+
+  if (!userId) {
+    return null;
+  }
+
+  const payload = {
+    user_id: userId,
+  };
+
+  const backendRole = normalizeRole(role);
+  if (backendRole === 'dept_manager') {
+    payload.role = backendRole;
+  }
+
+  return payload;
+}
+
 function pickDepartment(ticket) {
   return typeof ticket?.department === 'string' ? ticket.department : '';
 }
@@ -132,20 +151,19 @@ export async function createTicket(payload) {
 }
 
 export async function getMyTickets(userOrId, role = 'user') {
+  const normalizedRole = normalizeRole(role);
+
   if (useMocks()) {
-    const tickets = role === 'dept_manager' || role === 'responsible' ? MOCK_MY_TICKETS_RESPONSIBLE : MOCK_MY_TICKETS_USER;
+    const tickets = normalizedRole === 'dept_manager' ? MOCK_MY_TICKETS_RESPONSIBLE : MOCK_MY_TICKETS_USER;
     return { success: true, tickets };
   }
 
-  const userId = resolveUserId(userOrId);
-
-  if (!userId) {
+  const payload = buildTicketListPayload(userOrId, normalizedRole);
+  if (!payload) {
     return { success: true, tickets: [] };
   }
 
-  const result = await api.post('/my-tickets', {
-    user_id: userId,
-  }, { skipAuth: true });
+  const result = await api.post('/my-tickets', payload, { skipAuth: true });
 
   return normalizeTicketsResult(result);
 }
@@ -155,7 +173,12 @@ export async function getAllTickets(userOrId) {
     return { success: true, tickets: MOCK_ALL_TICKETS };
   }
 
-  const result = await api.get('/all-tickets');
+  const payload = buildTicketListPayload(userOrId, 'admin');
+  if (!payload) {
+    return { success: true, tickets: [] };
+  }
+
+  const result = await api.post('/all-tickets', payload, { skipAuth: true });
 
   return normalizeTicketsResult(result);
 }
