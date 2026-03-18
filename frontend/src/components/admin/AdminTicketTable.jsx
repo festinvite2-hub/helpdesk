@@ -70,7 +70,7 @@ export default function AdminTicketTable({
               >
                 <td className="px-4 py-3 font-mono text-xs text-slate-500">{ticket.ticket_number}</td>
                 <td className="px-4 py-3 font-medium text-slate-900">{ticket.title}</td>
-                <td className="px-4 py-3 text-slate-600">{ticket.created_by ?? 'Utilizator'}</td>
+                <td className="px-4 py-3 text-slate-600">{ticket.created_by_name ?? ticket.created_by_email ?? ticket.created_by ?? 'Utilizator'}</td>
                 <td className="px-4 py-3">
                   <span
                     className={`rounded-full px-2 py-1 text-xs font-medium ${hasDepartmentColor ? 'text-white' : 'bg-slate-100 text-slate-700'}`}
