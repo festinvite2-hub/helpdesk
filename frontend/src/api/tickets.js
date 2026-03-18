@@ -150,17 +150,6 @@ export async function getMyTickets(userOrId, role = 'user') {
   return normalizeTicketsResult(result);
 }
 
-export async function getInboxTickets(userId) {
-  if (!userId) {
-    return { success: true, tickets: [] };
-  }
-
-  const query = new URLSearchParams({ user_id: String(userId) }).toString();
-  const result = await api.get(`/inbox-tickets?${query}`);
-
-  return normalizeTicketsResult(result);
-}
-
 export async function getAllTickets(userOrId) {
   if (useMocks()) {
     return MOCK_ALL_TICKETS;
@@ -187,7 +176,7 @@ export async function getTicketsByRole(role, userId) {
   }
 
   if (normalizedRole === 'dept_manager') {
-    return getInboxTickets(userId);
+    return getMyTickets(userId, normalizedRole);
   }
 
   return getMyTickets(userId, normalizedRole);
