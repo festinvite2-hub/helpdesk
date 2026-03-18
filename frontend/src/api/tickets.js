@@ -178,7 +178,7 @@ export async function getAllTickets(userOrId) {
     return { success: true, tickets: [] };
   }
 
-  const result = await api.post('/all-tickets', payload, { skipAuth: true });
+  const result = await api.post('/my-tickets', payload, { skipAuth: true });
 
   return normalizeTicketsResult(result);
 }
