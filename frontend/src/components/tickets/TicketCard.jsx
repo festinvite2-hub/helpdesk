@@ -17,9 +17,21 @@ const statusMap = {
   closed: { label: 'închis', className: 'bg-slate-100 text-slate-600' },
 }
 
+function getAssignedLabel(ticket, currentUserId) {
+  if (ticket.assigned_to && currentUserId && String(ticket.assigned_to) === String(currentUserId)) {
+    return { label: 'Tu', isCurrentUser: true }
+  }
+
+  return {
+    label: ticket.assigned_to_name ?? ticket.assigned_to_email ?? ticket.assigned_to ?? 'Neasignat',
+    isCurrentUser: false,
+  }
+}
+
 export default function TicketCard({
   ticket,
   showCreatedBy = false,
+  currentUserId,
   onStatusChange,
   isStatusUpdating = false,
   canEditStatus = false,
@@ -27,6 +39,7 @@ export default function TicketCard({
   const priority = priorityMap[ticket.priority] ?? priorityMap.low
   const status = statusMap[ticket.status] ?? statusMap.open
   const createdByLabel = ticket.created_by_name ?? ticket.created_by_email ?? ticket.created_by
+  const assigned = getAssignedLabel(ticket, currentUserId)
   const statusOptions = [
     { value: 'open', label: 'Deschis' },
     { value: 'in_progress', label: 'În lucru' },
@@ -54,6 +67,15 @@ export default function TicketCard({
       {showCreatedBy && createdByLabel && (
         <p className="mt-0.5 text-xs text-slate-400">de la: {createdByLabel}</p>
       )}
+
+      <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
+        <span className="text-slate-400">asignat la:</span>
+        <span
+          className={assigned.isCurrentUser ? 'rounded-full bg-emerald-50 px-2 py-0.5 font-semibold text-emerald-700' : 'text-slate-600'}
+        >
+          {assigned.label}
+        </span>
+      </div>
 
       <div className="mt-2 flex flex-wrap items-center gap-2">
         {canEditStatus ? (

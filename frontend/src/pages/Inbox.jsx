@@ -75,6 +75,7 @@ export default function Inbox() {
   const [updatingTicketIds, setUpdatingTicketIds] = useState({})
 
   const canEditStatus = role === 'dept_manager' || role === 'admin' || role === 'responsible'
+  const currentUserId = user?.id ?? user?.user_id ?? null
 
   const openCount = tickets.filter((ticket) => ticket.status === 'open').length
   const inProgressCount = tickets.filter((ticket) => ticket.status === 'in_progress').length
@@ -115,7 +116,6 @@ export default function Inbox() {
 
   const loadTickets = useCallback(async () => {
     try {
-      const currentUserId = user?.id ?? user?.user_id
       const result = await getTicketsByRole(role, currentUserId)
       const nextTickets = Array.isArray(result) ? result : result?.tickets
       const mappedTickets = Array.isArray(nextTickets)
@@ -128,7 +128,7 @@ export default function Inbox() {
     } finally {
       setLoading(false)
     }
-  }, [role, user?.id, user?.user_id])
+  }, [currentUserId, role])
 
   useEffect(() => {
     loadTickets()
@@ -225,6 +225,7 @@ export default function Inbox() {
                 key={ticket.id}
                 ticket={ticket}
                 showCreatedBy
+                currentUserId={currentUserId}
                 onStatusChange={handleStatusChange}
                 isStatusUpdating={Boolean(updatingTicketIds[ticket.id])}
                 canEditStatus={canEditStatus}
@@ -233,6 +234,7 @@ export default function Inbox() {
           </div>
           <InboxTable
             tickets={sortedTickets}
+            currentUserId={currentUserId}
             canEditStatus={canEditStatus}
             onStatusChange={handleStatusChange}
             updatingTicketIds={updatingTicketIds}
