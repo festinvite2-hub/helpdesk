@@ -26,6 +26,7 @@ export default function TicketCard({
 }) {
   const priority = priorityMap[ticket.priority] ?? priorityMap.low
   const status = statusMap[ticket.status] ?? statusMap.open
+  const createdByLabel = ticket.created_by_name ?? ticket.created_by_email ?? ticket.created_by
   const statusOptions = [
     { value: 'open', label: 'Deschis' },
     { value: 'in_progress', label: 'În lucru' },
@@ -50,8 +51,8 @@ export default function TicketCard({
 
       <p className="mt-1 line-clamp-1 text-sm font-medium text-slate-900">{ticket.title}</p>
 
-      {showCreatedBy && ticket.created_by && (
-        <p className="mt-0.5 text-xs text-slate-400">de la: {ticket.created_by}</p>
+      {showCreatedBy && createdByLabel && (
+        <p className="mt-0.5 text-xs text-slate-400">de la: {createdByLabel}</p>
       )}
 
       <div className="mt-2 flex flex-wrap items-center gap-2">
