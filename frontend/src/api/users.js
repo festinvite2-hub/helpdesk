@@ -2,7 +2,7 @@ import { apiRequest, useMocks } from './client';
 import { MOCK_USERS } from '../mocks/admin';
 
 function normalizeRole(role) {
-  if (role === 'responsible') return 'dept_manager';
+  if (role === 'responsible' || role === 'responsabil') return 'dept_manager';
   if (role === 'dept_manager' || role === 'admin' || role === 'user') return role;
   return 'user';
 }

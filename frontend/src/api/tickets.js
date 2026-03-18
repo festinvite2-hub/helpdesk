@@ -29,7 +29,7 @@ function resolveUserId(userOrId) {
 }
 
 function normalizeRole(role) {
-  if (role === 'responsible') return 'dept_manager';
+  if (role === 'responsible' || role === 'responsabil') return 'dept_manager';
   if (role === 'dept_manager' || role === 'admin' || role === 'user') return role;
   return 'user';
 }
@@ -152,18 +152,10 @@ export async function getMyTickets(userOrId, role = 'user') {
 
 export async function getAllTickets(userOrId) {
   if (useMocks()) {
-    return MOCK_ALL_TICKETS;
+    return { success: true, tickets: MOCK_ALL_TICKETS };
   }
 
-  const userId = resolveUserId(userOrId);
-
-  if (!userId) {
-    return { success: true, tickets: [] };
-  }
-
-  const result = await api.post('/my-tickets', {
-    user_id: userId,
-  });
+  const result = await api.get('/all-tickets');
 
   return normalizeTicketsResult(result);
 }

@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ChevronLeft, ChevronDown, SendHorizontal } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { ChevronLeft, ChevronDown, Loader2, SendHorizontal } from 'lucide-react'
+import { useNavigate, useParams } from 'react-router-dom'
 import ChatBubble from '../components/tickets/ChatBubble'
 import useMediaQuery from '../hooks/useMediaQuery'
 import { useAuth } from '../context/AuthContext'
-import { MOCK_MESSAGES, MOCK_STATUS_HISTORY, MOCK_TICKET_DETAIL } from '../mocks/ticketDetail'
+import { addMessage, getTicketDetail } from '../api/tickets'
 
 const statusMap = {
   open: { label: 'Deschis', className: 'bg-sky-100 text-sky-700', dot: 'bg-sky-500' },
@@ -28,28 +28,134 @@ const routedByMap = {
   manual: 'Manual',
 }
 
+function normalizePerson(value, fallbackRole = 'user') {
+  if (!value) {
+    return { name: 'Necunoscut', role: fallbackRole }
+  }
+
+  if (typeof value === 'string') {
+    return { name: value, role: fallbackRole }
+  }
+
+  return {
+    name: value.name ?? value.full_name ?? value.email ?? 'Necunoscut',
+    role: value.role ?? fallbackRole,
+  }
+}
+
+function normalizeMessage(message, role) {
+  if (!message || typeof message !== 'object') return null
+
+  return {
+    ...message,
+    id: message.id ?? `m-${Date.now()}`,
+    sender_type: message.sender_type ?? role ?? 'user',
+    sender_name: message.sender_name ?? message.sender?.full_name ?? message.sender?.name ?? 'Necunoscut',
+    content: message.content ?? '',
+    created_at: message.created_at ?? new Date().toISOString(),
+  }
+}
+
+function normalizeHistoryEntry(entry) {
+  if (!entry || typeof entry !== 'object') return null
+
+  return {
+    status: entry.new_status ?? entry.status ?? 'open',
+    changed_by:
+      entry.changed_by_name ??
+      entry.changed_by?.full_name ??
+      entry.changed_by?.name ??
+      entry.changed_by ??
+      'Sistem',
+    note: entry.note ?? 'Actualizare status.',
+    created_at: entry.created_at ?? new Date().toISOString(),
+  }
+}
+
+function normalizeTicketDetailResponse(response, fallbackId) {
+  const ticketSource = response?.ticket ?? response?.data?.ticket ?? response ?? {}
+  const messagesSource = response?.messages ?? response?.data?.messages ?? []
+  const historySource =
+    response?.status_history ??
+    response?.history ??
+    response?.data?.status_history ??
+    response?.data?.history ??
+    []
+
+  const createdBy =
+    ticketSource.created_by_user ??
+    ticketSource.created_by ??
+    ticketSource.requester ??
+    ticketSource.requester_name
+  const assignedTo =
+    ticketSource.assigned_user ??
+    ticketSource.assigned_to ??
+    ticketSource.assigned_to_name
+
+  return {
+    ticket: {
+      ...ticketSource,
+      id: ticketSource.id ?? fallbackId,
+      ticket_number: ticketSource.ticket_number ?? ticketSource.ticketNumber ?? String(ticketSource.id ?? fallbackId ?? ''),
+      title: ticketSource.title ?? ticketSource.subject ?? 'Tichet fără titlu',
+      description: ticketSource.description ?? '',
+      status: ticketSource.status ?? 'open',
+      priority: ticketSource.priority ?? 'medium',
+      category:
+        ticketSource.category_name ??
+        ticketSource.category?.name ??
+        ticketSource.category ??
+        'General',
+      department:
+        ticketSource.department_name ??
+        ticketSource.department?.name ??
+        ticketSource.department ??
+        'Nespecificat',
+      department_color: ticketSource.department_color ?? ticketSource.department?.color ?? '#94a3b8',
+      created_by: normalizePerson(createdBy, 'user'),
+      assigned_to: normalizePerson(assignedTo, 'responsabil'),
+      created_at: ticketSource.created_at ?? new Date().toISOString(),
+      updated_at: ticketSource.updated_at ?? ticketSource.created_at ?? new Date().toISOString(),
+      routed_by: ticketSource.routed_by ?? 'manual',
+    },
+    messages: Array.isArray(messagesSource)
+      ? messagesSource.map((message) => normalizeMessage(message, 'user')).filter(Boolean)
+      : [],
+    statusHistory: Array.isArray(historySource)
+      ? historySource.map(normalizeHistoryEntry).filter(Boolean)
+      : [],
+  }
+}
+
 export default function TicketDetail() {
   const navigate = useNavigate()
-  const { role } = useAuth()
+  const { id: ticketId } = useParams()
+  const { role, user } = useAuth()
   const isDesktop = useMediaQuery('(min-width: 768px)')
 
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
   const [replyText, setReplyText] = useState('')
-  const [messages, setMessages] = useState(MOCK_MESSAGES)
+  const [ticket, setTicket] = useState(null)
+  const [messages, setMessages] = useState([])
+  const [statusHistory, setStatusHistory] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [sending, setSending] = useState(false)
+  const [replyError, setReplyError] = useState('')
 
   const bottomRef = useRef(null)
   const textareaRef = useRef(null)
 
-  const ticket = MOCK_TICKET_DETAIL
-  const status = statusMap[ticket.status] ?? statusMap.open
-  const priority = priorityMap[ticket.priority] ?? priorityMap.medium
-  const canManage = role === 'dept_manager' || role === 'responsible' || role === 'admin'
+  const canManage = role === 'dept_manager' || role === 'responsible' || role === 'responsabil' || role === 'admin'
 
   const sortedMessages = useMemo(
     () => [...messages].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()),
     [messages]
   )
+
+  const status = statusMap[ticket?.status] ?? statusMap.open
+  const priority = priorityMap[ticket?.priority] ?? priorityMap.medium
 
   const formatRelativeTime = (dateValue) => {
     const diffMs = Date.now() - new Date(dateValue).getTime()
@@ -81,22 +187,76 @@ export default function TicketDetail() {
     }
   }, [replyText])
 
-  const handleSend = () => {
-    if (!replyText.trim()) return
+  useEffect(() => {
+    async function loadTicket() {
+      if (!ticketId) {
+        setError('Lipsește identificatorul tichetului.')
+        setLoading(false)
+        return
+      }
 
-    const newMsg = {
-      id: `m${Date.now()}`,
-      sender_type: role === 'admin' ? 'admin' : role === 'dept_manager' || role === 'responsible' ? 'dept_manager' : 'user',
-      sender_name: role === 'admin' ? 'Administrator' : role === 'dept_manager' || role === 'responsible' ? 'Andrei Tecuci' : 'Maria Popescu',
-      content: replyText.trim(),
-      created_at: new Date().toISOString(),
+      setLoading(true)
+      setError('')
+
+      try {
+        const response = await getTicketDetail(ticketId)
+        const normalized = normalizeTicketDetailResponse(response, ticketId)
+
+        setTicket(normalized.ticket)
+        setMessages(normalized.messages)
+        setStatusHistory(normalized.statusHistory)
+      } catch (loadError) {
+        setError(loadError?.message || 'Nu s-au putut încărca detaliile tichetului.')
+      } finally {
+        setLoading(false)
+      }
     }
 
-    setMessages((prev) => [...prev, newMsg])
-    setReplyText('')
+    loadTicket()
+  }, [ticketId])
+
+  const handleSend = async () => {
+    if (!replyText.trim() || !ticketId || sending) return
+
+    setSending(true)
+    setReplyError('')
+
+    try {
+      const response = await addMessage(ticketId, replyText.trim())
+      const newMessage = normalizeMessage(response, role === 'admin' ? 'admin' : canManage ? 'dept_manager' : 'user')
+
+      setMessages((prev) => [
+        ...prev,
+        newMessage ?? {
+          id: `m${Date.now()}`,
+          sender_type: role === 'admin' ? 'admin' : canManage ? 'dept_manager' : 'user',
+          sender_name: user?.full_name ?? 'Utilizator',
+          content: replyText.trim(),
+          created_at: new Date().toISOString(),
+        },
+      ])
+      setReplyText('')
+    } catch (sendError) {
+      setReplyError(sendError?.message || 'Nu am putut trimite mesajul.')
+    } finally {
+      setSending(false)
+    }
   }
 
   const detailsVisible = isDesktop || detailsOpen
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[240px] items-center justify-center gap-3 text-slate-500">
+        <Loader2 size={18} className="animate-spin" />
+        <span>Se încarcă tichetul...</span>
+      </div>
+    )
+  }
+
+  if (error || !ticket) {
+    return <p className="text-red-600">{error || 'Tichetul nu a fost găsit.'}</p>
+  }
 
   return (
     <div className="pb-28 md:pb-6">
@@ -163,22 +323,9 @@ export default function TicketDetail() {
               </div>
 
               {canManage ? (
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <button
-                    className="min-h-11 rounded-lg bg-slate-100 px-3 py-1.5 text-xs text-slate-700 active:bg-slate-200"
-                    onClick={() => window.alert('Mock: schimbare status în curând')}
-                  >
-                    Schimbă status
-                  </button>
-                  {role === 'admin' ? (
-                    <button
-                      className="min-h-11 rounded-lg bg-slate-100 px-3 py-1.5 text-xs text-slate-700 active:bg-slate-200"
-                      onClick={() => window.alert('Mock: redirecționare departament în curând')}
-                    >
-                      Redirijează
-                    </button>
-                  ) : null}
-                </div>
+                <p className="mt-4 rounded-lg bg-white px-3 py-2 text-xs text-slate-500">
+                  Statusul se poate actualiza din listele de tichete și din inbox.
+                </p>
               ) : null}
             </div>
           </div>
@@ -186,7 +333,7 @@ export default function TicketDetail() {
           {!isDesktop ? null : (
             <div className="pb-8">
               <StatusHistory
-                items={MOCK_STATUS_HISTORY}
+                items={statusHistory}
                 statusMap={statusMap}
                 formatRelativeTime={formatRelativeTime}
                 alwaysOpen
@@ -203,7 +350,7 @@ export default function TicketDetail() {
 
             {!isDesktop ? (
               <StatusHistory
-                items={MOCK_STATUS_HISTORY}
+                items={statusHistory}
                 statusMap={statusMap}
                 formatRelativeTime={formatRelativeTime}
                 open={historyOpen}
@@ -224,12 +371,13 @@ export default function TicketDetail() {
               />
               <button
                 onClick={handleSend}
-                disabled={!replyText.trim()}
+                disabled={!replyText.trim() || sending}
                 className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white transition-all active:scale-95 active:bg-blue-700 disabled:bg-slate-300"
               >
-                <SendHorizontal size={18} />
+                {sending ? <Loader2 size={18} className="animate-spin" /> : <SendHorizontal size={18} />}
               </button>
             </div>
+            {replyError ? <p className="mt-2 text-sm text-red-600">{replyError}</p> : null}
           </div>
         </section>
       </main>
@@ -249,6 +397,10 @@ function Field({ label, value }) {
 function StatusHistory({ items, statusMap, formatRelativeTime, open = false, onToggle, alwaysOpen = false }) {
   const visible = alwaysOpen || open
 
+  if (!items.length && !alwaysOpen) {
+    return null
+  }
+
   return (
     <div className="mt-3">
       {!alwaysOpen ? (
@@ -261,23 +413,27 @@ function StatusHistory({ items, statusMap, formatRelativeTime, open = false, onT
 
       <div className={`overflow-hidden transition-all duration-200 ${visible ? 'max-h-[600px]' : 'max-h-0'}`}>
         <div className="mt-2 space-y-2 rounded-xl border border-slate-100 bg-white p-3">
-          {items.map((entry, index) => {
-            const status = statusMap[entry.status] ?? statusMap.open
-            return (
-              <div key={`${entry.created_at}-${entry.status}`} className="flex gap-3 text-xs">
-                <div className="flex flex-col items-center">
-                  <span className={`mt-1.5 h-2.5 w-2.5 rounded-full ${status.dot}`} />
-                  {index < items.length - 1 ? <span className="ml-0.5 h-full border-l-2 border-slate-200" /> : null}
+          {items.length === 0 ? (
+            <p className="text-xs text-slate-500">Nu există intrări de istoric disponibile.</p>
+          ) : (
+            items.map((entry, index) => {
+              const status = statusMap[entry.status] ?? statusMap.open
+              return (
+                <div key={`${entry.created_at}-${entry.status}-${index}`} className="flex gap-3 text-xs">
+                  <div className="flex flex-col items-center">
+                    <span className={`mt-1.5 h-2.5 w-2.5 rounded-full ${status.dot}`} />
+                    {index < items.length - 1 ? <span className="ml-0.5 h-full border-l-2 border-slate-200" /> : null}
+                  </div>
+                  <div className="pb-1">
+                    <p className="font-semibold text-slate-700">{status.label}</p>
+                    <p className="text-slate-500">{entry.changed_by}</p>
+                    <p className="text-slate-600">{entry.note}</p>
+                    <p className="text-[10px] text-slate-400">{formatRelativeTime(entry.created_at)}</p>
+                  </div>
                 </div>
-                <div className="pb-1">
-                  <p className="font-semibold text-slate-700">{status.label}</p>
-                  <p className="text-slate-500">{entry.changed_by}</p>
-                  <p className="text-slate-600">{entry.note}</p>
-                  <p className="text-[10px] text-slate-400">{formatRelativeTime(entry.created_at)}</p>
-                </div>
-              </div>
-            )
-          })}
+              )
+            })
+          )}
         </div>
       </div>
     </div>

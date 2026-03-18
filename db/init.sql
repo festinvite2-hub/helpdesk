@@ -10,7 +10,7 @@ CREATE TABLE departments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(100) UNIQUE NOT NULL,
     description TEXT,
-    manager_id UUID,
+    last_assignment_order INTEGER DEFAULT 0,
     email_notify VARCHAR(255),
     is_active BOOLEAN DEFAULT true,
     color VARCHAR(7) DEFAULT '#3B82F6',
@@ -23,25 +23,20 @@ CREATE TABLE users (
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     full_name VARCHAR(255) NOT NULL,
-    role VARCHAR(20) DEFAULT 'user' CHECK (role IN ('user', 'dept_manager', 'admin')),
+    role VARCHAR(20) DEFAULT 'user' CHECK (role IN ('user', 'dept_manager', 'responsabil', 'admin')),
     primary_department_id UUID REFERENCES departments(id),
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
-
--- Legatura managerului de departament se adauga dupa crearea tabelului users
-ALTER TABLE departments
-    ADD CONSTRAINT fk_dept_manager
-    FOREIGN KEY (manager_id)
-    REFERENCES users(id);
 
 -- 4) Membrii departamentelor si drepturile lor operationale
 CREATE TABLE department_members (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     department_id UUID NOT NULL REFERENCES departments(id),
     user_id UUID NOT NULL REFERENCES users(id),
-    role_in_dept VARCHAR(30) DEFAULT 'member' CHECK (role_in_dept IN ('manager', 'member')),
+    assignment_order INTEGER NOT NULL,
     can_be_assigned BOOLEAN DEFAULT true,
+    is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE (department_id, user_id)
 );
@@ -95,7 +90,7 @@ CREATE TABLE ticket_messages (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     ticket_id UUID NOT NULL REFERENCES tickets(id) ON DELETE CASCADE,
     sender_id UUID REFERENCES users(id),
-    sender_type VARCHAR(20) NOT NULL CHECK (sender_type IN ('user', 'admin', 'dept_manager', 'ai')),
+    sender_type VARCHAR(20) NOT NULL CHECK (sender_type IN ('user', 'admin', 'dept_manager', 'responsabil', 'ai')),
     content TEXT NOT NULL,
     is_internal BOOLEAN DEFAULT false,
     sources JSONB,
