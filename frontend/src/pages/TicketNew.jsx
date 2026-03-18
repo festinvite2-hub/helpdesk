@@ -7,7 +7,7 @@ import { CATEGORY_OPTIONS, PRIORITY_OPTIONS } from '../config/constants'
 import { useAuth } from '../context/AuthContext'
 
 export default function TicketNew() {
-  const { role } = useAuth()
+  const { role, user } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const prefill = location.state || {}
@@ -86,6 +86,11 @@ export default function TicketNew() {
       return
     }
 
+    if (!user?.id) {
+      setErrors((current) => ({ ...current, submit: 'Nu s-a putut identifica utilizatorul autentificat.' }))
+      return
+    }
+
     setIsSubmitting(true)
     setErrors((current) => ({ ...current, submit: '' }))
 
@@ -100,7 +105,7 @@ export default function TicketNew() {
         category: formData.category,
         priority: formData.priority,
         department_id: formData.department || null,
-        user_id: null,
+        user_id: user.id,
       })
 
       if (result.success) {
