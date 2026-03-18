@@ -172,8 +172,9 @@ export async function getAllTickets(userOrId) {
     return { success: true, tickets: [] };
   }
 
-  const query = new URLSearchParams({ user_id: String(userId) }).toString();
-  const result = await api.get(`/all-tickets?${query}`);
+  const result = await api.post('/my-tickets', {
+    user_id: userId,
+  });
 
   return normalizeTicketsResult(result);
 }
