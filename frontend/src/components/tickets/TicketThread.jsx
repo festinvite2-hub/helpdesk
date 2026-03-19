@@ -300,7 +300,7 @@ export default function TicketThread({ ticketId, currentUser = null }) {
       <div
         ref={threadViewportRef}
         onScroll={updateStickiness}
-        className="flex max-h-[52vh] min-h-[320px] flex-col gap-4 overflow-y-auto rounded-2xl border border-slate-200 bg-gradient-to-b from-slate-50 via-white to-slate-50 p-4 shadow-sm sm:p-5"
+        className="flex max-h-[52vh] min-h-[320px] flex-col gap-4 overflow-y-auto rounded-2xl border border-slate-200 bg-gradient-to-b from-slate-50 via-white to-slate-50 p-5 shadow-sm transition hover:shadow-md sm:p-6"
       >
         {sortedMessages.map((message) => {
           const isOwnMessage = currentUserId != null && String(message.sender_id) === currentUserId
@@ -355,7 +355,7 @@ export default function TicketThread({ ticketId, currentUser = null }) {
 
   return (
     <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md">
-      <div className="flex flex-col gap-4 border-b border-slate-200 bg-white/90 px-5 py-5 backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:px-6">
+      <div className="flex flex-col gap-4 border-b border-slate-200 bg-white/90 px-6 py-5 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-lg font-semibold text-slate-900">Conversație</h2>
           <p className="mt-1 text-sm text-slate-500">Mesajele se sincronizează automat la fiecare 5 secunde.</p>
@@ -372,14 +372,14 @@ export default function TicketThread({ ticketId, currentUser = null }) {
         </button>
       </div>
 
-      <div className="space-y-6 px-5 py-5 sm:px-6">
+      <div className="space-y-6 px-6 py-6">
         {renderContent()}
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md sm:p-6">
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-md">
           <label htmlFor="ticket-thread-composer" className="mb-3 block text-sm font-semibold text-slate-700">
             Răspuns nou
           </label>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
             <textarea
               id="ticket-thread-composer"
               value={composerValue}
@@ -388,13 +388,13 @@ export default function TicketThread({ ticketId, currentUser = null }) {
               rows={4}
               placeholder="Scrie mesajul tău aici..."
               disabled={composerDisabled || sending}
-              className="min-h-[120px] w-full resize-y rounded-2xl border border-slate-300 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 disabled:cursor-not-allowed disabled:bg-slate-50"
+              className="min-h-[120px] w-full resize-y rounded-2xl border border-slate-300 px-4 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 disabled:cursor-not-allowed disabled:bg-slate-50"
             />
             <button
               type="button"
               onClick={handleSend}
               disabled={composerDisabled || sending || !composerValue.trim()}
-              className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-blue-700 px-5 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-100 sm:w-auto"
+              className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-blue-700 px-6 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-100 sm:w-auto"
             >
               {sending ? <Loader2 size={16} className="animate-spin" /> : <SendHorizontal size={16} />}
               {sending ? 'Se trimite...' : 'Trimite mesajul'}
