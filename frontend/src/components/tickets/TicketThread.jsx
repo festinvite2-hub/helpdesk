@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Loader2, MessageSquare, RefreshCw, SendHorizontal } from 'lucide-react'
+import { Loader2, RefreshCw, SendHorizontal } from 'lucide-react'
 import { getTicketMessages, sendTicketMessage } from '../../api/ticketMessages'
 import { useAuth } from '../../context/AuthContext'
 
@@ -7,20 +7,55 @@ const senderLabels = {
   user: 'Utilizator',
   admin: 'Administrator',
   responsabil: 'Responsabil',
+  dept_manager: 'Responsabil',
   ai: 'Asistent AI',
 }
 
-const senderStyles = {
-  self: 'ml-auto rounded-2xl rounded-br-md bg-blue-600 text-white shadow-sm',
-  user: 'mr-auto rounded-2xl rounded-bl-md border border-slate-200 bg-white text-slate-900 shadow-sm',
-  admin: 'mr-auto rounded-2xl rounded-bl-md border border-amber-200 bg-amber-50 text-slate-900 shadow-sm',
-  responsabil: 'mr-auto rounded-2xl rounded-bl-md border border-emerald-200 bg-emerald-50 text-slate-900 shadow-sm',
-  ai: 'mr-auto rounded-2xl rounded-bl-md border border-violet-200 bg-violet-50 text-slate-900 shadow-sm',
+const roleBubbleStyles = {
+  user: {
+    bubble: 'bg-slate-200 text-slate-900',
+    meta: 'text-slate-500',
+    avatar: 'bg-slate-500 text-white',
+  },
+  admin: {
+    bubble: 'bg-violet-600 text-white',
+    meta: 'text-violet-100/90',
+    avatar: 'bg-violet-600 text-white',
+  },
+  responsabil: {
+    bubble: 'bg-blue-600 text-white',
+    meta: 'text-blue-100/90',
+    avatar: 'bg-blue-600 text-white',
+  },
+  dept_manager: {
+    bubble: 'bg-blue-600 text-white',
+    meta: 'text-blue-100/90',
+    avatar: 'bg-blue-600 text-white',
+  },
+  ai: {
+    bubble: 'bg-slate-800 text-white',
+    meta: 'text-slate-300',
+    avatar: 'bg-slate-800 text-white',
+  },
 }
 
 function normalizeCurrentUserId(user) {
   const userId = user?.id ?? user?.user_id ?? user?.userId ?? null
   return userId ? String(userId) : null
+}
+
+function normalizeSenderRole(senderType) {
+  if (senderType === 'dept_manager') return 'responsabil'
+  return senderType ?? 'user'
+}
+
+function getRoleLetter(senderType) {
+  const normalizedRole = normalizeSenderRole(senderType)
+
+  if (normalizedRole === 'admin') return 'A'
+  if (normalizedRole === 'responsabil') return 'R'
+  if (normalizedRole === 'ai') return 'AI'
+  return 'U'
 }
 
 function formatTimestamp(dateValue) {
@@ -253,10 +288,12 @@ export default function TicketThread({ ticketId, currentUser = null }) {
 
     if (!sortedMessages.length) {
       return (
-        <div className="flex min-h-[240px] flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-6 py-10 text-center">
-          <MessageSquare size={34} className="text-slate-300" />
-          <p className="mt-3 text-sm font-medium text-slate-700">Nu există încă mesaje pentru acest tichet.</p>
-          <p className="mt-1 text-sm text-slate-500">Trimite primul răspuns pentru a porni conversația.</p>
+        <div className="flex min-h-[320px] flex-col items-center justify-center rounded-[28px] border border-dashed border-slate-200 bg-slate-50/80 px-6 py-10 text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-2xl shadow-sm ring-1 ring-slate-200">
+            💬
+          </div>
+          <p className="mt-4 text-base font-semibold text-slate-800">Nu există mesaje încă</p>
+          <p className="mt-1 max-w-sm text-sm text-slate-500">Fii primul care răspunde la acest ticket</p>
         </div>
       )
     }
@@ -265,31 +302,49 @@ export default function TicketThread({ ticketId, currentUser = null }) {
       <div
         ref={threadViewportRef}
         onScroll={updateStickiness}
-        className="max-h-[52vh] min-h-[320px] space-y-3 overflow-y-auto rounded-2xl border border-slate-200 bg-slate-50 p-3 sm:p-4"
+        className="max-h-[52vh] min-h-[320px] space-y-4 overflow-y-auto rounded-[28px] border border-slate-200 bg-gradient-to-b from-slate-50 via-white to-slate-50 p-4 sm:p-5"
       >
         {sortedMessages.map((message) => {
           const isOwnMessage = currentUserId != null && String(message.sender_id) === currentUserId
-          const bubbleStyle = isOwnMessage ? senderStyles.self : senderStyles[message.sender_type] ?? senderStyles.user
-          const senderLabel = isOwnMessage ? 'Tu' : senderLabels[message.sender_type] ?? 'Utilizator'
+          const normalizedRole = normalizeSenderRole(message.sender_type)
+          const styles = roleBubbleStyles[normalizedRole] ?? roleBubbleStyles.user
+          const senderLabel = isOwnMessage ? 'Tu' : senderLabels[message.sender_type] ?? senderLabels[normalizedRole] ?? 'Utilizator'
+          const senderInitial = isOwnMessage ? getRoleLetter(user?.role ?? message.sender_type) : getRoleLetter(message.sender_type)
+          const alignmentClass = isOwnMessage ? 'justify-end' : 'justify-start'
+          const bubbleRadiusClass = isOwnMessage ? 'rounded-2xl rounded-br-md' : 'rounded-2xl rounded-bl-md'
+          const metaToneClass = isOwnMessage ? 'text-slate-500' : styles.meta
+          const actualName = message.sender_name?.trim()
+          const showName = actualName && actualName !== senderLabel && !isOwnMessage
 
           return (
-            <article
-              key={message.id}
-              className={`flex max-w-[92%] flex-col gap-2 px-4 py-3 text-sm sm:max-w-[80%] ${bubbleStyle}`}
-            >
-              <div className={`flex flex-wrap items-center gap-x-2 gap-y-1 text-xs ${isOwnMessage ? 'text-blue-100' : 'text-slate-500'}`}>
-                <span className={`font-semibold ${isOwnMessage ? 'text-white' : 'text-slate-900'}`}>
-                  {message.sender_name}
-                </span>
-                <span>•</span>
-                <span>{senderLabel}</span>
-                <span>•</span>
-                <time dateTime={message.created_at}>{formatTimestamp(message.created_at)}</time>
-              </div>
-              <p className={`whitespace-pre-wrap break-words leading-relaxed ${isOwnMessage ? 'text-white' : 'text-slate-700'}`}>
-                {message.content}
-              </p>
-            </article>
+            <div key={message.id} className={`flex ${alignmentClass}`}>
+              <article className={`flex w-full max-w-[70%] items-end gap-3 ${isOwnMessage ? 'flex-row-reverse' : 'flex-row'}`}>
+                <div
+                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold uppercase shadow-sm ${styles.avatar}`}
+                  aria-hidden="true"
+                >
+                  {senderInitial}
+                </div>
+
+                <div className={`flex min-w-0 flex-1 flex-col ${isOwnMessage ? 'items-end' : 'items-start'}`}>
+                  <div className={`mb-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs ${isOwnMessage ? 'justify-end text-slate-500' : 'justify-start text-slate-500'}`}>
+                    <span className={`font-semibold ${isOwnMessage ? 'text-slate-700' : 'text-slate-700'}`}>
+                      {senderLabel}
+                    </span>
+                    {showName ? <span className="text-slate-400">• {actualName}</span> : null}
+                    <time dateTime={message.created_at}>{formatTimestamp(message.created_at)}</time>
+                  </div>
+
+                  <div className={`w-full px-4 py-3 shadow-sm ${bubbleRadiusClass} ${styles.bubble}`}>
+                    <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">{message.content}</p>
+                  </div>
+
+                  <span className={`mt-1 text-[11px] ${metaToneClass}`}>
+                    {isOwnMessage ? 'Mesaj trimis' : senderLabels[message.sender_type] ?? senderLabels[normalizedRole] ?? 'Mesaj primit'}
+                  </span>
+                </div>
+              </article>
+            </div>
           )
         })}
       </div>
@@ -299,8 +354,8 @@ export default function TicketThread({ ticketId, currentUser = null }) {
   const composerDisabled = !ticketId || !currentUserId
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="flex flex-col gap-3 border-b border-slate-200 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+    <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
+      <div className="flex flex-col gap-3 border-b border-slate-200 bg-white/90 px-4 py-4 backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:px-5">
         <div>
           <h2 className="text-lg font-semibold text-slate-900">Conversație</h2>
           <p className="mt-1 text-sm text-slate-500">Mesajele se sincronizează automat la fiecare 5 secunde.</p>
@@ -310,7 +365,7 @@ export default function TicketThread({ ticketId, currentUser = null }) {
           type="button"
           onClick={() => loadMessages({ silent: false })}
           disabled={loading || isRefreshing}
-          className="inline-flex min-h-[40px] items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex min-h-[40px] items-center justify-center gap-2 rounded-full border border-slate-200 px-3.5 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
           Reîmprospătează
@@ -320,7 +375,7 @@ export default function TicketThread({ ticketId, currentUser = null }) {
       <div className="space-y-4 px-4 py-4 sm:px-5">
         {renderContent()}
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-3 sm:p-4">
+        <div className="rounded-[24px] border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
           <label htmlFor="ticket-thread-composer" className="mb-2 block text-sm font-medium text-slate-700">
             Răspuns nou
           </label>
@@ -333,16 +388,16 @@ export default function TicketThread({ ticketId, currentUser = null }) {
               rows={4}
               placeholder="Scrie mesajul tău aici..."
               disabled={composerDisabled || sending}
-              className="min-h-[120px] w-full resize-y rounded-xl border border-slate-300 px-3 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-50"
+              className="min-h-[120px] w-full resize-y rounded-2xl border border-slate-300 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-50"
             />
             <button
               type="button"
               onClick={handleSend}
               disabled={composerDisabled || sending || !composerValue.trim()}
-              className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300 sm:w-auto"
+              className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300 sm:w-auto"
             >
               {sending ? <Loader2 size={16} className="animate-spin" /> : <SendHorizontal size={16} />}
-              Trimite mesajul
+              {sending ? 'Se trimite...' : 'Trimite mesajul'}
             </button>
           </div>
           <p className="mt-2 text-xs text-slate-500">Apasă Enter pentru trimitere și Shift + Enter pentru rând nou.</p>
