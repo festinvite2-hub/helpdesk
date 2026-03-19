@@ -1,4 +1,4 @@
-import { AlertCircle, ChevronLeft, Clock3, FileText, UserRound } from 'lucide-react'
+import { AlertCircle, ChevronLeft, Clock3, FileText, Info, UserRound } from 'lucide-react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import TicketThread from '../components/tickets/TicketThread'
 import { useAuth } from '../context/AuthContext'
@@ -9,12 +9,12 @@ const STATUS_STYLES = {
   waiting: 'bg-orange-50 text-orange-700 ring-orange-200',
   escalated: 'bg-rose-50 text-rose-700 ring-rose-200',
   resolved: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
-  closed: 'bg-slate-100 text-slate-700 ring-slate-200',
+  closed: 'bg-gray-100 text-gray-700 ring-gray-200',
 }
 
 const PRIORITY_STYLES = {
   low: 'bg-slate-100 text-slate-700 ring-slate-200',
-  medium: 'bg-blue-50 text-blue-700 ring-blue-200',
+  medium: 'bg-yellow-100 text-yellow-800 ring-yellow-200',
   high: 'bg-orange-50 text-orange-700 ring-orange-200',
   critical: 'bg-red-50 text-red-700 ring-red-200',
 }
@@ -126,7 +126,7 @@ function normalizeBadgeLabel(value, fallback) {
 
 function DetailCard({ title, description, children, action = null }) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md sm:p-6">
       <div className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
@@ -142,7 +142,7 @@ function DetailCard({ title, description, children, action = null }) {
 function MetadataItem({ label, value, muted = false }) {
   return (
     <div className="space-y-1 rounded-2xl border border-slate-100 bg-slate-50/70 px-4 py-3">
-      <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</dt>
+      <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</dt>
       <dd className={`text-sm font-medium ${muted ? 'text-slate-500' : 'text-slate-900'}`}>{value}</dd>
     </div>
   )
@@ -151,7 +151,7 @@ function MetadataItem({ label, value, muted = false }) {
 function Badge({ children, className = '', style }) {
   return (
     <span
-      className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset ${className}`}
+      className={`inline-flex items-center rounded-full px-3 py-1.5 text-xs font-semibold ring-1 ring-inset ${className}`}
       style={style}
     >
       {children}
@@ -185,13 +185,9 @@ export default function TicketDetail() {
 
   const statusBadgeClass = ticket.status ? STATUS_STYLES[ticket.status] ?? 'bg-slate-100 text-slate-700 ring-slate-200' : 'bg-slate-100 text-slate-500 ring-slate-200'
   const priorityBadgeClass = ticket.priority ? PRIORITY_STYLES[ticket.priority] ?? 'bg-slate-100 text-slate-700 ring-slate-200' : 'bg-slate-100 text-slate-500 ring-slate-200'
-  const departmentBadgeStyle = ticket.departmentColor
-    ? { backgroundColor: `${ticket.departmentColor}1A`, color: ticket.departmentColor, boxShadow: `inset 0 0 0 1px ${ticket.departmentColor}33` }
-    : undefined
-
   return (
     <div className="space-y-6 pb-28 md:pb-6">
-      <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
+      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md">
         <div className="border-b border-slate-100 bg-gradient-to-r from-slate-50 via-white to-slate-50 px-5 py-5 sm:px-6 sm:py-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div className="flex items-start gap-3">
@@ -207,15 +203,20 @@ export default function TicketDetail() {
               <div className="space-y-3">
                 <div>
                   <p className="text-sm font-medium text-slate-500">Detalii ticket</p>
-                  <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{title}</h1>
+                  <div className="mt-1 flex flex-wrap items-center gap-2.5">
+                    <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{title}</h1>
+                    <Badge className={statusBadgeClass}>{normalizeBadgeLabel(ticket.status, 'Status nedisponibil')}</Badge>
+                    <Badge className={priorityBadgeClass}>{normalizeBadgeLabel(ticket.priority, 'Prioritate nedisponibilă')}</Badge>
+                  </div>
+                  <p className="mt-2 text-sm text-slate-500">ID ticket: {ticket.id}</p>
                   {titleSubtitle ? <p className="mt-1 text-sm text-slate-500">{titleSubtitle}</p> : null}
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
-                  <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700">ID ticket: {ticket.id}</span>
-                  <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700">Număr: {ticket.ticketNumber || 'Nedisponibil'}</span>
-                  <Badge className={statusBadgeClass}>{normalizeBadgeLabel(ticket.status, 'Status nedisponibil')}</Badge>
-                  <Badge className={priorityBadgeClass}>{normalizeBadgeLabel(ticket.priority, 'Prioritate nedisponibilă')}</Badge>
+                  <span className="rounded-full bg-slate-100 px-3 py-1.5 font-medium text-slate-700">Număr: {ticket.ticketNumber || 'Nedisponibil'}</span>
+                  <Badge className="bg-blue-100 text-blue-800 ring-blue-200">
+                    {ticket.department || 'Departament nedisponibil'}
+                  </Badge>
                 </div>
               </div>
             </div>
@@ -234,9 +235,9 @@ export default function TicketDetail() {
             title="Informații ticket"
             description="Datele principale ale ticketului și rezumatul disponibil în acest moment."
           >
-            <div className="space-y-5">
+            <div className="space-y-6">
               <div className="grid gap-4 md:grid-cols-2">
-                <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
+                <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-5 shadow-sm transition hover:shadow-md">
                   <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
                     <FileText size={16} className="text-slate-400" />
                     Titlu
@@ -244,7 +245,7 @@ export default function TicketDetail() {
                   <p className="mt-3 text-base font-semibold text-slate-900">{ticket.title || 'Titlu indisponibil momentan'}</p>
                 </div>
 
-                <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
+                <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-5 shadow-sm transition hover:shadow-md">
                   <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
                     <UserRound size={16} className="text-slate-400" />
                     Creat de
@@ -255,7 +256,7 @@ export default function TicketDetail() {
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-slate-100 bg-white p-4">
+              <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition hover:shadow-md">
                 <p className="text-sm font-medium text-slate-700">Descriere</p>
                 {hasDescription ? (
                   <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-700">{ticket.description}</p>
@@ -267,7 +268,7 @@ export default function TicketDetail() {
               </div>
 
               {ticket.summary ? (
-                <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
+                <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-5 shadow-sm transition hover:shadow-md">
                   <p className="text-sm font-medium text-slate-700">Rezumat</p>
                   <p className="mt-3 text-sm leading-6 text-slate-600">{ticket.summary}</p>
                 </div>
@@ -289,19 +290,16 @@ export default function TicketDetail() {
             title="Metadate"
             description="Statusul curent și persoanele implicate în ticket."
           >
-            <div className="space-y-4">
+            <div className="space-y-5">
               <div className="flex flex-wrap gap-2">
                 <Badge className={statusBadgeClass}>{normalizeBadgeLabel(ticket.status, 'Status nedisponibil')}</Badge>
                 <Badge className={priorityBadgeClass}>{normalizeBadgeLabel(ticket.priority, 'Prioritate nedisponibilă')}</Badge>
-                <Badge
-                  className={departmentBadgeStyle ? '' : 'bg-slate-100 text-slate-700 ring-slate-200'}
-                  style={departmentBadgeStyle}
-                >
+                <Badge className="bg-blue-100 text-blue-800 ring-blue-200">
                   {ticket.department || 'Departament nedisponibil'}
                 </Badge>
               </div>
 
-              <dl className="space-y-3">
+              <dl className="space-y-4">
                 <MetadataItem label="Status" value={normalizeBadgeLabel(ticket.status, 'Nedisponibil')} muted={!ticket.status} />
                 <MetadataItem label="Prioritate" value={normalizeBadgeLabel(ticket.priority, 'Nedisponibil')} muted={!ticket.priority} />
                 <MetadataItem label="Departament" value={ticket.department || 'Nedisponibil'} muted={!ticket.department} />
@@ -317,15 +315,25 @@ export default function TicketDetail() {
               title="Context suplimentar"
               description="Informațiile deja disponibile din listele de ticketing."
             >
-              <div className="space-y-3">
-                <MetadataItem label="Număr ticket" value={ticket.ticketNumber || 'Nedisponibil'} muted={!ticket.ticketNumber} />
-                <MetadataItem label="Categorie" value={ticket.category || 'Nedisponibil'} muted={!ticket.category} />
-                <MetadataItem label="Rutare" value={ticket.routedBy || 'Nedisponibil'} muted={!ticket.routedBy} />
+              <div className="rounded-2xl border border-slate-200 bg-gray-50 p-4 sm:p-5">
+                <div className="flex items-start gap-3">
+                  <div className="rounded-xl bg-white p-2 text-blue-600 shadow-sm ring-1 ring-slate-200">
+                    <Info size={16} />
+                  </div>
+                  <div className="min-w-0 flex-1 space-y-3">
+                    <p className="text-sm font-semibold text-slate-700">Detalii utile pentru contextul curent</p>
+                    <div className="space-y-3">
+                      <MetadataItem label="Număr ticket" value={ticket.ticketNumber || 'Nedisponibil'} muted={!ticket.ticketNumber} />
+                      <MetadataItem label="Categorie" value={ticket.category || 'Nedisponibil'} muted={!ticket.category} />
+                      <MetadataItem label="Rutare" value={ticket.routedBy || 'Nedisponibil'} muted={!ticket.routedBy} />
+                    </div>
+                  </div>
+                </div>
               </div>
             </DetailCard>
           ) : null}
 
-          <section className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5 shadow-sm sm:p-6">
+          <section className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5 shadow-sm transition hover:shadow-md sm:p-6">
             <div className="flex items-start gap-3">
               <div className="mt-0.5 rounded-full bg-white p-2 text-slate-500 shadow-sm ring-1 ring-slate-200">
                 <AlertCircle size={16} />
