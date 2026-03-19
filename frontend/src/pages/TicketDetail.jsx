@@ -275,7 +275,9 @@ function Badge({ children, className = '', style }) {
 }
 
 function StatusHistoryCard({ history, loading, error }) {
+  const visibleStatusHistory = history.slice(0, 3)
   const hasItems = history.length > 0
+  const hasMoreThanVisibleHistory = history.length > visibleStatusHistory.length
 
   return (
     <DetailCard
@@ -297,7 +299,7 @@ function StatusHistoryCard({ history, loading, error }) {
 
         {!loading && !error && hasItems ? (
           <div className="space-y-2.5">
-            {history.map((item) => {
+            {visibleStatusHistory.map((item) => {
               const oldStatusStyles = getStatusStyles(item.oldStatus)
               const newStatusStyles = getStatusStyles(item.newStatus)
 
@@ -335,6 +337,10 @@ function StatusHistoryCard({ history, loading, error }) {
                 </article>
               )
             })}
+
+            {hasMoreThanVisibleHistory ? (
+              <p className="text-xs text-slate-500">Se afișează ultimele 3 modificări.</p>
+            ) : null}
           </div>
         ) : null}
       </div>
