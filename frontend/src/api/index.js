@@ -6,3 +6,5 @@ export * as usersApi from './users';
 export * as routingRulesApi from './routingRules';
 export * as kbApi from './knowledgeBase';
 export * as aiApi from './aiChat';
+
+export * as ticketMessagesApi from './ticketMessages';
