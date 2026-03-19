@@ -1,5 +1,7 @@
-import { AlertCircle, ChevronLeft, Clock3, FileText, Info, UserRound } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { ChevronLeft, FileText, History, UserRound } from 'lucide-react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { getTicketStatusHistory } from '../api/tickets'
 import TicketThread from '../components/tickets/TicketThread'
 import { useAuth } from '../context/AuthContext'
 
@@ -44,6 +46,24 @@ function formatDisplayDate(value) {
   })
 }
 
+function formatDate(value) {
+  if (!value) return 'Dată indisponibilă'
+
+  const parsedDate = new Date(value)
+  if (Number.isNaN(parsedDate.getTime())) {
+    return 'Dată indisponibilă'
+  }
+
+  return parsedDate.toLocaleString('ro-RO', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  })
+}
+
 function getTextValue(...values) {
   for (const value of values) {
     if (typeof value === 'string' && value.trim()) {
@@ -78,6 +98,37 @@ function getRawIdentifier(value) {
 
 function getReadableOrRawValue(readableValues, rawValues, fallback) {
   return getTextValue(...readableValues) || getRawIdentifier(rawValues[0]) || getTextValue(...rawValues.slice(1)) || fallback
+}
+
+function normalizeHistoryNote(note) {
+  if (typeof note !== 'string') return ''
+
+  const trimmedNote = note.trim()
+  if (!trimmedNote || trimmedNote.toLowerCase() === 'null') {
+    return ''
+  }
+
+  return trimmedNote
+}
+
+function normalizeStatusHistoryEntry(entry, index) {
+  const normalizedEntry = entry && typeof entry === 'object' ? entry : {}
+  const oldStatus = getTextValue(normalizedEntry.old_status, normalizedEntry.oldStatus) || 'Nespecificat'
+  const newStatus = getTextValue(normalizedEntry.new_status, normalizedEntry.newStatus) || 'Nespecificat'
+
+  return {
+    id: String(normalizedEntry.id ?? normalizedEntry.history_id ?? `${oldStatus}-${newStatus}-${index}`),
+    oldStatus,
+    newStatus,
+    changedByName: getTextValue(
+      normalizedEntry.changed_by_name,
+      normalizedEntry.changedByName,
+      normalizedEntry.user_name,
+      normalizedEntry.actor_name
+    ) || 'Utilizator necunoscut',
+    changedAt: normalizedEntry.changed_at ?? normalizedEntry.changedAt ?? normalizedEntry.created_at ?? normalizedEntry.createdAt ?? '',
+    note: normalizeHistoryNote(normalizedEntry.note ?? normalizedEntry.notes),
+  }
 }
 
 function normalizeTicketDetails(rawTicket, fallbackId) {
@@ -189,11 +240,110 @@ function Badge({ children, className = '', style }) {
   )
 }
 
+function StatusHistoryCard({ history, loading, error }) {
+  const hasItems = history.length > 0
+
+  return (
+    <DetailCard
+      title="Istoric status"
+      description="Ultimele modificări de status în ordinea furnizată de backend."
+    >
+      <div className="space-y-4">
+        {loading ? <p className="text-sm text-slate-500">Se încarcă istoricul...</p> : null}
+
+        {!loading && error ? (
+          <p className="rounded-2xl border border-red-100 bg-red-50/60 px-4 py-3 text-sm text-red-700">
+            Nu s-a putut încărca istoricul statusului.
+          </p>
+        ) : null}
+
+        {!loading && !error && !hasItems ? (
+          <p className="text-sm text-slate-500">Nu există modificări de status.</p>
+        ) : null}
+
+        {!loading && !error && hasItems ? (
+          <div className="space-y-3">
+            {history.map((item) => (
+              <article
+                key={item.id}
+                className="rounded-2xl border border-slate-100 bg-slate-50/70 px-4 py-4 shadow-sm"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 rounded-xl bg-white p-2 text-slate-500 shadow-sm ring-1 ring-slate-200">
+                    <History size={16} />
+                  </div>
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <p className="text-sm font-semibold text-slate-900">
+                      {item.oldStatus} <span className="mx-1 text-slate-400">→</span> {item.newStatus}
+                    </p>
+                    <p className="text-xs font-medium text-slate-500">
+                      de {item.changedByName} • {formatDate(item.changedAt)}
+                    </p>
+                    {item.note ? (
+                      <p className="whitespace-pre-wrap text-sm leading-6 text-slate-600">{item.note}</p>
+                    ) : null}
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : null}
+      </div>
+    </DetailCard>
+  )
+}
+
 export default function TicketDetail() {
   const navigate = useNavigate()
   const location = useLocation()
   const { id } = useParams()
   const { user } = useAuth()
+  const [statusHistory, setStatusHistory] = useState([])
+  const [statusHistoryLoading, setStatusHistoryLoading] = useState(false)
+  const [statusHistoryError, setStatusHistoryError] = useState('')
+
+  useEffect(() => {
+    let isMounted = true
+
+    async function loadStatusHistory() {
+      if (!id) {
+        if (isMounted) {
+          setStatusHistory([])
+          setStatusHistoryLoading(false)
+          setStatusHistoryError('')
+        }
+        return
+      }
+
+      if (isMounted) {
+        setStatusHistoryLoading(true)
+        setStatusHistoryError('')
+      }
+
+      try {
+        const response = await getTicketStatusHistory(id)
+        if (!isMounted) return
+
+        const history = Array.isArray(response?.history) ? response.history : []
+        setStatusHistory(history.map(normalizeStatusHistoryEntry))
+      } catch (requestError) {
+        if (!isMounted) return
+
+        setStatusHistory([])
+        setStatusHistoryError(requestError?.message || 'Nu s-a putut încărca istoricul statusului.')
+      } finally {
+        if (isMounted) {
+          setStatusHistoryLoading(false)
+        }
+      }
+    }
+
+    loadStatusHistory()
+
+    return () => {
+      isMounted = false
+    }
+  }, [id])
 
   if (!id) {
     return <InlineErrorState message="Lipsește ID-ul ticketului din adresă." />
@@ -204,17 +354,13 @@ export default function TicketDetail() {
   }
 
   const ticket = normalizeTicketDetails(location.state?.ticket, id)
-  const hasTicketSnapshot = Boolean(location.state?.ticket && typeof location.state.ticket === 'object')
   const hasDescription = Boolean(ticket.description)
-  const hasSummaryData = Boolean(ticket.category !== 'Nedisponibil' || ticket.routedBy || ticket.ticketNumber)
   const title = ticket.title || 'Ticket'
   const titleSubtitle = ticket.title ? null : 'Titlu indisponibil momentan'
-  const detailAvailabilityNote = hasTicketSnapshot
-    ? 'Pagina afișează datele disponibile din lista de tickete și conversația live a ticketului.'
-    : 'Detaliile complete ale ticketului vor fi afișate aici când endpoint-ul de detalii este disponibil.'
 
   const statusBadgeClass = ticket.status ? STATUS_STYLES[ticket.status] ?? 'bg-slate-100 text-slate-700 ring-slate-200' : 'bg-slate-100 text-slate-500 ring-slate-200'
   const priorityBadgeClass = ticket.priority ? PRIORITY_STYLES[ticket.priority] ?? 'bg-slate-100 text-slate-700 ring-slate-200' : 'bg-slate-100 text-slate-500 ring-slate-200'
+
   return (
     <div className="space-y-6 pb-28 md:pb-6">
       <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md">
@@ -307,7 +453,7 @@ export default function TicketDetail() {
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 <MetadataItem label="Creat la" value={formatDisplayDate(ticket.createdAt)} muted={!ticket.createdAt} />
                 <MetadataItem label="Ultima actualizare" value={formatDisplayDate(ticket.updatedAt)} muted={!ticket.updatedAt} />
-                <MetadataItem label="Date suplimentare" value={detailAvailabilityNote} muted />
+                <MetadataItem label="Categorie" value={ticket.category} muted={ticket.category === 'Nedisponibil'} />
               </div>
             </div>
           </DetailCard>
@@ -346,44 +492,11 @@ export default function TicketDetail() {
             </div>
           </DetailCard>
 
-          {hasSummaryData ? (
-            <DetailCard
-              title="Context suplimentar"
-              description="Informațiile deja disponibile din listele de ticketing."
-            >
-              <div className="rounded-2xl border border-slate-200 bg-gray-50 p-5 shadow-sm">
-                <div className="flex items-start gap-3">
-                  <div className="rounded-xl bg-white p-2 text-blue-600 shadow-sm ring-1 ring-slate-200">
-                    <Info size={16} />
-                  </div>
-                  <div className="min-w-0 flex-1 space-y-4">
-                    <p className="text-sm font-semibold text-slate-700">Detalii utile pentru contextul curent</p>
-                    <div className="space-y-3">
-                      <MetadataItem label="Număr ticket" value={ticket.ticketNumber || 'Nedisponibil'} muted={!ticket.ticketNumber} />
-                      <MetadataItem label="Categorie" value={ticket.category} muted={ticket.category === 'Nedisponibil'} />
-                      <MetadataItem label="Rutare" value={ticket.routedBy || 'Nedisponibil'} muted={!ticket.routedBy} />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </DetailCard>
-          ) : null}
-
-          <section className="rounded-2xl border border-slate-200 bg-slate-50/70 p-6 shadow-sm transition hover:shadow-md">
-            <div className="flex items-start gap-3">
-              <div className="mt-0.5 rounded-full bg-white p-2 text-slate-500 shadow-sm ring-1 ring-slate-200">
-                <AlertCircle size={16} />
-              </div>
-              <div>
-                <h2 className="text-base font-semibold text-slate-900">Disponibilitate detalii</h2>
-                <p className="mt-2 text-sm leading-6 text-slate-600">{detailAvailabilityNote}</p>
-                <div className="mt-4 flex items-center gap-2 text-xs font-medium text-slate-500">
-                  <Clock3 size={14} />
-                  Ticket ID curent: {ticket.id}
-                </div>
-              </div>
-            </div>
-          </section>
+          <StatusHistoryCard
+            history={statusHistory}
+            loading={statusHistoryLoading}
+            error={statusHistoryError}
+          />
         </aside>
       </div>
     </div>

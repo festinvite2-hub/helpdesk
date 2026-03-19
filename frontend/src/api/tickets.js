@@ -258,6 +258,32 @@ export async function updateTicketStatus({ ticketId, newStatus, userId, note }) 
   });
 }
 
+export async function getTicketStatusHistory(ticketId) {
+  if (!ticketId) {
+    return { success: true, history: [] };
+  }
+
+  if (useMocks()) {
+    return { success: true, history: [] };
+  }
+
+  const params = new URLSearchParams({ ticket_id: String(ticketId) });
+  const response = await api.get(`/ticket-status-history?${params.toString()}`);
+
+  if (Array.isArray(response)) {
+    return { success: true, history: response };
+  }
+
+  return {
+    success: response?.success ?? true,
+    history: Array.isArray(response?.history)
+      ? response.history
+      : Array.isArray(response?.data?.history)
+        ? response.data.history
+        : [],
+  };
+}
+
 export async function rerouteTicket({ ticketId, newDepartmentId, reason, userId }) {
   if (useMocks()) {
     return { success: true };
