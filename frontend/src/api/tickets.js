@@ -6,6 +6,29 @@ import {
 } from '../mocks/tickets';
 import { MOCK_TICKET_DETAIL, MOCK_MESSAGES } from '../mocks/ticketDetail';
 
+/**
+ * @typedef {'auto' | 'manual'} TicketRoutingMode
+ */
+
+/**
+ * @typedef {Object} CreateTicketRequest
+ * @property {string} title
+ * @property {string} description
+ * @property {string} priority
+ * @property {TicketRoutingMode} routing_mode
+ * @property {string | null} department_id
+ * @property {string} user_id
+ */
+
+/**
+ * @typedef {Object} CreateTicketResponse
+ * @property {boolean} success
+ * @property {boolean=} requires_manual_department
+ * @property {string=} message
+ * @property {string=} error
+ * @property {string=} ticket_id
+ */
+
 function resolveUserId(userOrId) {
   if (typeof userOrId === 'string' || typeof userOrId === 'number') {
     return String(userOrId);
@@ -136,6 +159,10 @@ export function createTicketMock(payload) {
   });
 }
 
+/**
+ * @param {CreateTicketRequest} payload
+ * @returns {Promise<CreateTicketResponse>}
+ */
 export async function createTicket(payload) {
   if (useMocks()) {
     return new Promise((resolve) => {
