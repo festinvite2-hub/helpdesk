@@ -205,6 +205,40 @@ function normalizeBadgeLabel(value, fallback) {
     .join(' ')
 }
 
+function getStatusStyles(status) {
+  const statusStyles = {
+    open: {
+      backgroundColor: 'bg-blue-100',
+      textColor: 'text-blue-700',
+    },
+    in_progress: {
+      backgroundColor: 'bg-yellow-100',
+      textColor: 'text-yellow-700',
+    },
+    waiting: {
+      backgroundColor: 'bg-orange-100',
+      textColor: 'text-orange-700',
+    },
+    resolved: {
+      backgroundColor: 'bg-green-100',
+      textColor: 'text-green-700',
+    },
+    closed: {
+      backgroundColor: 'bg-gray-200',
+      textColor: 'text-gray-700',
+    },
+    rerouted: {
+      backgroundColor: 'bg-purple-100',
+      textColor: 'text-purple-700',
+    },
+  }
+
+  return statusStyles[status] ?? {
+    backgroundColor: 'bg-slate-100',
+    textColor: 'text-slate-700',
+  }
+}
+
 function DetailCard({ title, description, children, action = null }) {
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-md">
@@ -263,29 +297,44 @@ function StatusHistoryCard({ history, loading, error }) {
 
         {!loading && !error && hasItems ? (
           <div className="space-y-3">
-            {history.map((item) => (
-              <article
-                key={item.id}
-                className="rounded-2xl border border-slate-100 bg-slate-50/70 px-4 py-4 shadow-sm"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="mt-0.5 rounded-xl bg-white p-2 text-slate-500 shadow-sm ring-1 ring-slate-200">
-                    <History size={16} />
+            {history.map((item) => {
+              const oldStatusStyles = getStatusStyles(item.oldStatus)
+              const newStatusStyles = getStatusStyles(item.newStatus)
+
+              return (
+                <article
+                  key={item.id}
+                  className="rounded-2xl border border-slate-100 bg-slate-50/70 px-4 py-4 shadow-sm"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5 rounded-xl bg-white p-2 text-slate-500 shadow-sm ring-1 ring-slate-200">
+                      <History size={16} />
+                    </div>
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <div className="inline-flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-900">
+                        <span
+                          className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${oldStatusStyles.backgroundColor} ${oldStatusStyles.textColor}`}
+                        >
+                          {normalizeBadgeLabel(item.oldStatus, 'Nespecificat')}
+                        </span>
+                        <span className="text-slate-400">→</span>
+                        <span
+                          className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${newStatusStyles.backgroundColor} ${newStatusStyles.textColor}`}
+                        >
+                          {normalizeBadgeLabel(item.newStatus, 'Nespecificat')}
+                        </span>
+                      </div>
+                      <p className="text-xs font-medium text-slate-500">
+                        de {item.changedByName} • {formatDate(item.changedAt)}
+                      </p>
+                      {item.note ? (
+                        <p className="whitespace-pre-wrap text-sm leading-6 text-slate-600">{item.note}</p>
+                      ) : null}
+                    </div>
                   </div>
-                  <div className="min-w-0 flex-1 space-y-2">
-                    <p className="text-sm font-semibold text-slate-900">
-                      {item.oldStatus} <span className="mx-1 text-slate-400">→</span> {item.newStatus}
-                    </p>
-                    <p className="text-xs font-medium text-slate-500">
-                      de {item.changedByName} • {formatDate(item.changedAt)}
-                    </p>
-                    {item.note ? (
-                      <p className="whitespace-pre-wrap text-sm leading-6 text-slate-600">{item.note}</p>
-                    ) : null}
-                  </div>
-                </div>
-              </article>
-            ))}
+                </article>
+              )
+            })}
           </div>
         ) : null}
       </div>
