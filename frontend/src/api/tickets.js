@@ -4,7 +4,6 @@ import {
   MOCK_MY_TICKETS_RESPONSIBLE,
   MOCK_ALL_TICKETS,
 } from '../mocks/tickets';
-import { MOCK_TICKET_DETAIL, MOCK_MESSAGES } from '../mocks/ticketDetail';
 
 /**
  * @typedef {'auto' | 'manual'} TicketRoutingMode
@@ -226,16 +225,6 @@ export async function getTicketsByRole(role, userId) {
   return getMyTickets(userId, normalizedRole);
 }
 
-export async function getTicketDetail(ticketId) {
-  if (useMocks()) {
-    return {
-      ticket: MOCK_TICKET_DETAIL,
-      messages: MOCK_MESSAGES,
-    };
-  }
-
-  return api.get(`/ticket/${ticketId}`);
-}
 
 export async function addMessage(ticketId, content) {
   if (useMocks()) {
