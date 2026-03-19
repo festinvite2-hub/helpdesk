@@ -13,7 +13,7 @@ const senderLabels = {
 
 const roleBubbleStyles = {
   user: {
-    bubble: 'bg-slate-200 text-slate-900',
+    bubble: 'bg-gray-200 text-gray-800',
     meta: 'text-slate-500',
     avatar: 'bg-slate-500 text-white',
   },
@@ -90,6 +90,7 @@ export default function TicketThread({ ticketId, currentUser = null }) {
   const user = currentUser ?? authUser
   const currentUserId = normalizeCurrentUserId(user)
   const threadViewportRef = useRef(null)
+  const messagesEndRef = useRef(null)
   const shouldStickToBottomRef = useRef(true)
   const pollingRef = useRef(null)
   const latestRequestRef = useRef(0)
@@ -109,12 +110,9 @@ export default function TicketThread({ ticketId, currentUser = null }) {
   )
 
   const scrollToBottom = useCallback((behavior = 'smooth') => {
-    const viewport = threadViewportRef.current
-    if (!viewport) return
-
-    viewport.scrollTo({
-      top: viewport.scrollHeight,
+    messagesEndRef.current?.scrollIntoView({
       behavior,
+      block: 'end',
     })
   }, [])
 
@@ -302,7 +300,7 @@ export default function TicketThread({ ticketId, currentUser = null }) {
       <div
         ref={threadViewportRef}
         onScroll={updateStickiness}
-        className="max-h-[52vh] min-h-[320px] space-y-4 overflow-y-auto rounded-[28px] border border-slate-200 bg-gradient-to-b from-slate-50 via-white to-slate-50 p-4 sm:p-5"
+        className="max-h-[52vh] min-h-[320px] space-y-3 overflow-y-auto rounded-[28px] border border-slate-200 bg-gradient-to-b from-slate-50 via-white to-slate-50 p-3 sm:space-y-4 sm:p-5"
       >
         {sortedMessages.map((message) => {
           const isOwnMessage = currentUserId != null && String(message.sender_id) === currentUserId
@@ -312,22 +310,27 @@ export default function TicketThread({ ticketId, currentUser = null }) {
           const senderInitial = isOwnMessage ? getRoleLetter(user?.role ?? message.sender_type) : getRoleLetter(message.sender_type)
           const alignmentClass = isOwnMessage ? 'justify-end' : 'justify-start'
           const bubbleRadiusClass = isOwnMessage ? 'rounded-2xl rounded-br-md' : 'rounded-2xl rounded-bl-md'
-          const metaToneClass = isOwnMessage ? 'text-slate-500' : styles.meta
           const actualName = message.sender_name?.trim()
           const showName = actualName && actualName !== senderLabel && !isOwnMessage
 
           return (
             <div key={message.id} className={`flex ${alignmentClass}`}>
-              <article className={`flex w-full max-w-[70%] items-end gap-3 ${isOwnMessage ? 'flex-row-reverse' : 'flex-row'}`}>
+              <article
+                className={`flex w-full max-w-[88%] items-end gap-2 sm:max-w-[70%] ${isOwnMessage ? 'flex-row-reverse' : 'flex-row'}`}
+              >
                 <div
-                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold uppercase shadow-sm ${styles.avatar}`}
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold uppercase shadow-sm sm:h-9 sm:w-9 sm:text-xs ${styles.avatar}`}
                   aria-hidden="true"
                 >
                   {senderInitial}
                 </div>
 
                 <div className={`flex min-w-0 flex-1 flex-col ${isOwnMessage ? 'items-end' : 'items-start'}`}>
-                  <div className={`mb-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs ${isOwnMessage ? 'justify-end text-slate-500' : 'justify-start text-slate-500'}`}>
+                  <div
+                    className={`mb-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 px-1 text-[11px] sm:text-xs ${
+                      isOwnMessage ? 'justify-end text-slate-500' : 'justify-start text-slate-500'
+                    }`}
+                  >
                     <span className={`font-semibold ${isOwnMessage ? 'text-slate-700' : 'text-slate-700'}`}>
                       {senderLabel}
                     </span>
@@ -335,18 +338,15 @@ export default function TicketThread({ ticketId, currentUser = null }) {
                     <time dateTime={message.created_at}>{formatTimestamp(message.created_at)}</time>
                   </div>
 
-                  <div className={`w-full px-4 py-3 shadow-sm ${bubbleRadiusClass} ${styles.bubble}`}>
+                  <div className={`w-full px-4 py-3 shadow-sm transition duration-200 hover:shadow ${bubbleRadiusClass} ${styles.bubble}`}>
                     <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">{message.content}</p>
                   </div>
-
-                  <span className={`mt-1 text-[11px] ${metaToneClass}`}>
-                    {isOwnMessage ? 'Mesaj trimis' : senderLabels[message.sender_type] ?? senderLabels[normalizedRole] ?? 'Mesaj primit'}
-                  </span>
                 </div>
               </article>
             </div>
           )
         })}
+        <div ref={messagesEndRef} aria-hidden="true" />
       </div>
     )
   }
