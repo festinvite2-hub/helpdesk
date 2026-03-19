@@ -91,10 +91,11 @@ export default function TicketThread({ ticketId, currentUser = null }) {
   const currentUserId = normalizeCurrentUserId(user)
   const threadViewportRef = useRef(null)
   const messagesEndRef = useRef(null)
-  const shouldStickToBottomRef = useRef(true)
+  const hasInitialScrolledRef = useRef(false)
+  const shouldScrollAfterSendRef = useRef(false)
+  const wasNearBottomRef = useRef(true)
   const pollingRef = useRef(null)
   const latestRequestRef = useRef(0)
-  const initialLoadRef = useRef(true)
 
   const [messages, setMessages] = useState([])
   const [loading, setLoading] = useState(true)
@@ -116,15 +117,19 @@ export default function TicketThread({ ticketId, currentUser = null }) {
     })
   }, [])
 
-  const updateStickiness = useCallback(() => {
+  const isNearBottom = useCallback(() => {
     const viewport = threadViewportRef.current
-    if (!viewport) return
+    if (!viewport) return true
 
     const distanceFromBottom = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight
-    shouldStickToBottomRef.current = distanceFromBottom < 120
+    return distanceFromBottom < 120
   }, [])
 
-  const loadMessages = useCallback(async ({ silent = false } = {}) => {
+  const updateStickiness = useCallback(() => {
+    wasNearBottomRef.current = isNearBottom()
+  }, [isNearBottom])
+
+  const loadMessages = useCallback(async ({ silent = false, preserveScrollIntent = false } = {}) => {
     if (!ticketId) {
       setMessages([])
       setError('Nu există un tichet selectat pentru conversație.')
@@ -140,6 +145,8 @@ export default function TicketThread({ ticketId, currentUser = null }) {
       setIsRefreshing(false)
       return
     }
+
+    wasNearBottomRef.current = preserveScrollIntent ? isNearBottom() : true
 
     const requestId = latestRequestRef.current + 1
     latestRequestRef.current = requestId
@@ -167,14 +174,14 @@ export default function TicketThread({ ticketId, currentUser = null }) {
       if (latestRequestRef.current === requestId) {
         setLoading(false)
         setIsRefreshing(false)
-        initialLoadRef.current = false
       }
     }
-  }, [currentUserId, ticketId])
+  }, [currentUserId, isNearBottom, ticketId])
 
   useEffect(() => {
-    initialLoadRef.current = true
-    shouldStickToBottomRef.current = true
+    hasInitialScrolledRef.current = false
+    shouldScrollAfterSendRef.current = false
+    wasNearBottomRef.current = true
     setComposerValue('')
     setSendError('')
     loadMessages()
@@ -184,7 +191,7 @@ export default function TicketThread({ ticketId, currentUser = null }) {
     }
 
     pollingRef.current = window.setInterval(() => {
-      loadMessages({ silent: true })
+      loadMessages({ silent: true, preserveScrollIntent: true })
     }, 5000)
 
     return () => {
@@ -197,10 +204,26 @@ export default function TicketThread({ ticketId, currentUser = null }) {
   useEffect(() => {
     if (!sortedMessages.length) return
 
-    if (initialLoadRef.current || shouldStickToBottomRef.current || sending) {
-      scrollToBottom(initialLoadRef.current ? 'auto' : 'smooth')
+    if (!hasInitialScrolledRef.current) {
+      scrollToBottom('auto')
+      hasInitialScrolledRef.current = true
+      shouldScrollAfterSendRef.current = false
+      wasNearBottomRef.current = true
+      return
     }
-  }, [scrollToBottom, sending, sortedMessages])
+
+    if (shouldScrollAfterSendRef.current) {
+      scrollToBottom('smooth')
+      shouldScrollAfterSendRef.current = false
+      wasNearBottomRef.current = true
+      return
+    }
+
+    if (wasNearBottomRef.current) {
+      scrollToBottom('smooth')
+      wasNearBottomRef.current = true
+    }
+  }, [scrollToBottom, sortedMessages])
 
   const handleSend = async () => {
     if (!ticketId) {
@@ -218,7 +241,7 @@ export default function TicketThread({ ticketId, currentUser = null }) {
 
     setSending(true)
     setSendError('')
-    shouldStickToBottomRef.current = true
+    shouldScrollAfterSendRef.current = true
 
     try {
       await sendTicketMessage({
@@ -230,6 +253,7 @@ export default function TicketThread({ ticketId, currentUser = null }) {
       setComposerValue('')
       await loadMessages({ silent: true })
     } catch (requestError) {
+      shouldScrollAfterSendRef.current = false
       setSendError(requestError?.message || 'Mesajul nu a putut fi trimis. Încearcă din nou.')
     } finally {
       setSending(false)
