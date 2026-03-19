@@ -85,15 +85,29 @@ function compareMessages(left, right) {
   return String(left.id).localeCompare(String(right.id))
 }
 
+function areMessagesEqual(currentMessages, nextMessages) {
+  if (currentMessages === nextMessages) return true
+  if (currentMessages.length !== nextMessages.length) return false
+
+  return currentMessages.every((message, index) => {
+    const nextMessage = nextMessages[index]
+
+    return message.id === nextMessage?.id
+      && message.content === nextMessage?.content
+      && message.created_at === nextMessage?.created_at
+      && message.sender_id === nextMessage?.sender_id
+      && message.sender_name === nextMessage?.sender_name
+      && message.sender_type === nextMessage?.sender_type
+  })
+}
+
 export default function TicketThread({ ticketId, currentUser = null }) {
   const { user: authUser } = useAuth()
   const user = currentUser ?? authUser
   const currentUserId = normalizeCurrentUserId(user)
   const threadViewportRef = useRef(null)
-  const messagesEndRef = useRef(null)
   const hasInitialScrolledRef = useRef(false)
   const shouldScrollAfterSendRef = useRef(false)
-  const wasNearBottomRef = useRef(true)
   const pollingRef = useRef(null)
   const latestRequestRef = useRef(0)
 
@@ -110,26 +124,14 @@ export default function TicketThread({ ticketId, currentUser = null }) {
     [messages]
   )
 
-  const scrollToBottom = useCallback((behavior = 'smooth') => {
-    messagesEndRef.current?.scrollIntoView({
-      behavior,
-      block: 'end',
-    })
-  }, [])
-
-  const isNearBottom = useCallback(() => {
+  const scrollThreadToBottom = useCallback(() => {
     const viewport = threadViewportRef.current
-    if (!viewport) return true
+    if (!viewport) return
 
-    const distanceFromBottom = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight
-    return distanceFromBottom < 120
+    viewport.scrollTop = viewport.scrollHeight
   }, [])
 
-  const updateStickiness = useCallback(() => {
-    wasNearBottomRef.current = isNearBottom()
-  }, [isNearBottom])
-
-  const loadMessages = useCallback(async ({ silent = false, preserveScrollIntent = false } = {}) => {
+  const loadMessages = useCallback(async ({ silent = false } = {}) => {
     if (!ticketId) {
       setMessages([])
       setError('Nu există un tichet selectat pentru conversație.')
@@ -145,8 +147,6 @@ export default function TicketThread({ ticketId, currentUser = null }) {
       setIsRefreshing(false)
       return
     }
-
-    wasNearBottomRef.current = preserveScrollIntent ? isNearBottom() : true
 
     const requestId = latestRequestRef.current + 1
     latestRequestRef.current = requestId
@@ -165,7 +165,11 @@ export default function TicketThread({ ticketId, currentUser = null }) {
 
       if (latestRequestRef.current !== requestId) return
 
-      setMessages(Array.isArray(response?.messages) ? response.messages : [])
+      const nextMessages = Array.isArray(response?.messages) ? response.messages : []
+
+      setMessages((currentMessages) => (
+        areMessagesEqual(currentMessages, nextMessages) ? currentMessages : nextMessages
+      ))
       setError('')
     } catch (loadError) {
       if (latestRequestRef.current !== requestId) return
@@ -176,12 +180,11 @@ export default function TicketThread({ ticketId, currentUser = null }) {
         setIsRefreshing(false)
       }
     }
-  }, [currentUserId, isNearBottom, ticketId])
+  }, [currentUserId, ticketId])
 
   useEffect(() => {
     hasInitialScrolledRef.current = false
     shouldScrollAfterSendRef.current = false
-    wasNearBottomRef.current = true
     setComposerValue('')
     setSendError('')
     loadMessages()
@@ -191,7 +194,7 @@ export default function TicketThread({ ticketId, currentUser = null }) {
     }
 
     pollingRef.current = window.setInterval(() => {
-      loadMessages({ silent: true, preserveScrollIntent: true })
+      loadMessages({ silent: true })
     }, 5000)
 
     return () => {
@@ -205,25 +208,17 @@ export default function TicketThread({ ticketId, currentUser = null }) {
     if (!sortedMessages.length) return
 
     if (!hasInitialScrolledRef.current) {
-      scrollToBottom('auto')
+      scrollThreadToBottom()
       hasInitialScrolledRef.current = true
       shouldScrollAfterSendRef.current = false
-      wasNearBottomRef.current = true
       return
     }
 
     if (shouldScrollAfterSendRef.current) {
-      scrollToBottom('smooth')
+      scrollThreadToBottom()
       shouldScrollAfterSendRef.current = false
-      wasNearBottomRef.current = true
-      return
     }
-
-    if (wasNearBottomRef.current) {
-      scrollToBottom('smooth')
-      wasNearBottomRef.current = true
-    }
-  }, [scrollToBottom, sortedMessages])
+  }, [scrollThreadToBottom, sortedMessages])
 
   const handleSend = async () => {
     if (!ticketId) {
@@ -323,7 +318,6 @@ export default function TicketThread({ ticketId, currentUser = null }) {
     return (
       <div
         ref={threadViewportRef}
-        onScroll={updateStickiness}
         className="flex max-h-[52vh] min-h-[320px] flex-col gap-4 overflow-y-auto rounded-2xl border border-slate-200 bg-gradient-to-b from-slate-50 via-white to-slate-50 p-5 shadow-sm transition hover:shadow-md sm:p-6"
       >
         {sortedMessages.map((message) => {
@@ -370,7 +364,6 @@ export default function TicketThread({ ticketId, currentUser = null }) {
             </div>
           )
         })}
-        <div ref={messagesEndRef} aria-hidden="true" />
       </div>
     )
   }
