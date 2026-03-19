@@ -53,6 +53,7 @@ export default function TicketCard({
   return (
     <Link
       to={`/tickets/${ticket.id}`}
+      state={{ ticket }}
       className="block min-h-[44px] rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-transform active:scale-[0.98]"
     >
       <div className="flex items-center justify-between gap-3">

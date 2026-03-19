@@ -77,7 +77,7 @@ export default function AdminTicketTable({
               <tr
                 key={ticket.id}
                 className="cursor-pointer border-t border-slate-100 hover:bg-slate-50"
-                onClick={() => navigate(`/tickets/${ticket.id}`)}
+                onClick={() => navigate(`/tickets/${ticket.id}`, { state: { ticket } })}
               >
                 <td className="px-4 py-3 font-mono text-xs text-slate-500">{ticket.ticket_number}</td>
                 <td className="px-4 py-3 font-medium text-slate-900">{ticket.title}</td>
@@ -148,7 +148,7 @@ export default function AdminTicketTable({
                         type="button"
                         onClick={(event) => {
                           event.stopPropagation()
-                          navigate(`/tickets/${ticket.id}`)
+                          navigate(`/tickets/${ticket.id}`, { state: { ticket } })
                         }}
                         className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-100"
                       >
