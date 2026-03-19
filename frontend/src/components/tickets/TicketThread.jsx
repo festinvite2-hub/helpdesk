@@ -50,8 +50,9 @@ function compareMessages(left, right) {
   return String(left.id).localeCompare(String(right.id))
 }
 
-export default function TicketThread({ ticketId }) {
-  const { user } = useAuth()
+export default function TicketThread({ ticketId, currentUser = null }) {
+  const { user: authUser } = useAuth()
+  const user = currentUser ?? authUser
   const currentUserId = normalizeCurrentUserId(user)
   const threadViewportRef = useRef(null)
   const shouldStickToBottomRef = useRef(true)
