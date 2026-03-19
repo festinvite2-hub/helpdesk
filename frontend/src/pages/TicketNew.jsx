@@ -1,34 +1,39 @@
 import { useEffect, useRef, useState } from 'react'
 import { CheckCircle2, ChevronDown, Info, Loader2 } from 'lucide-react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import { createTicket } from '../api/tickets'
 import { getDepartments } from '../api/departments'
-import { CATEGORY_OPTIONS, PRIORITY_OPTIONS } from '../config/constants'
+import { ApiError } from '../api/client'
+import { PRIORITY_OPTIONS } from '../config/constants'
 import { useAuth } from '../context/AuthContext'
+
+const AUTO_DEPARTMENT_VALUE = 'auto'
+
+function getInitialFormData(prefill, role) {
+  return {
+    title: prefill.prefillTitle || '',
+    description: prefill.prefillDescription || '',
+    priority: 'medium',
+    department: role === 'admin' ? '' : AUTO_DEPARTMENT_VALUE,
+  }
+}
 
 export default function TicketNew() {
   const { role, user } = useAuth()
-  const navigate = useNavigate()
   const location = useLocation()
   const prefill = location.state || {}
   const descriptionRef = useRef(null)
-  const [formData, setFormData] = useState({
-    title: prefill.prefillTitle || '',
-    description: prefill.prefillDescription || '',
-    category: 'auto',
-    priority: 'medium',
-    department: '',
-  })
+  const [formData, setFormData] = useState(() => getInitialFormData(prefill, role))
   const [errors, setErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
+  const [requiresManualDepartment, setRequiresManualDepartment] = useState(false)
   const [departments, setDepartments] = useState([])
   const [departmentsLoading, setDepartmentsLoading] = useState(false)
   const [departmentsError, setDepartmentsError] = useState('')
 
 
   useEffect(() => {
-    if (role !== 'admin') return
-
     async function loadDepartments() {
       setDepartmentsLoading(true)
       setDepartmentsError('')
@@ -37,7 +42,7 @@ export default function TicketNew() {
         const result = await getDepartments()
         setDepartments(Array.isArray(result) ? result : [])
       } catch {
-        setDepartmentsError('Nu s-au putut încărca departamentele')
+        setDepartmentsError('Lista departamentelor nu a putut fi încărcată. Reîncearcă.')
         setDepartments([])
       } finally {
         setDepartmentsLoading(false)
@@ -51,6 +56,11 @@ export default function TicketNew() {
     const { name, value } = event.target
     setFormData((current) => ({ ...current, [name]: value }))
     setErrors((current) => ({ ...current, [name]: '' }))
+    setSuccessMessage('')
+
+    if (name === 'department' && value !== AUTO_DEPARTMENT_VALUE) {
+      setRequiresManualDepartment(false)
+    }
   }
 
   const validate = () => {
@@ -64,11 +74,44 @@ export default function TicketNew() {
       nextErrors.description = 'Descrierea este obligatorie.'
     }
 
+    if (!formData.priority) {
+      nextErrors.priority = 'Prioritatea este obligatorie.'
+    }
+
     if (role === 'admin' && !formData.department) {
       nextErrors.department = 'Alege un departament.'
     }
 
+    if (role !== 'admin' && requiresManualDepartment && formData.department === AUTO_DEPARTMENT_VALUE) {
+      nextErrors.department = 'Te rugăm să alegi manual un departament.'
+    }
+
     return nextErrors
+  }
+
+  const handleCreateTicketResult = (result) => {
+    if (result?.success) {
+      setSuccessMessage(result.message || 'Tichetul a fost creat cu succes.')
+      setRequiresManualDepartment(false)
+      setErrors({})
+      setFormData(getInitialFormData({}, role))
+      return true
+    }
+
+    if (result?.requires_manual_department) {
+      setRequiresManualDepartment(true)
+      setErrors((current) => ({
+        ...current,
+        submit: '',
+        department: result.message || 'Nu am putut identifica automat departamentul. Te rugăm să alegi manual departamentul.',
+      }))
+      return false
+    }
+
+    setErrors({
+      submit: result?.message || result?.error || 'Eroare la crearea tichetului.',
+    })
+    return false
   }
 
   const handleSubmit = async (event) => {
@@ -93,28 +136,46 @@ export default function TicketNew() {
 
     setIsSubmitting(true)
     setErrors((current) => ({ ...current, submit: '' }))
+    setSuccessMessage('')
 
     try {
       if (import.meta.env.DEV) {
         console.debug('[TicketNew] createTicket called')
       }
 
-      const result = await createTicket({
-        title: formData.title,
-        description: formData.description,
-        category: formData.category,
-        priority: formData.priority,
-        department_id: formData.department || null,
-        user_id: user.id,
-      })
+      const isManualRouting = role === 'admin'
+        ? Boolean(formData.department)
+        : formData.department !== AUTO_DEPARTMENT_VALUE
 
-      if (result.success) {
-        navigate('/my-tickets')
-      } else {
-        setErrors({ submit: result.error || 'Eroare la crearea tichetului.' })
-      }
+      const result = await createTicket(role === 'admin'
+        ? {
+            title: formData.title,
+            description: formData.description,
+            priority: formData.priority,
+            routing_mode: 'manual',
+            department_id: formData.department || null,
+            user_id: user.id,
+          }
+        : {
+            title: formData.title,
+            description: formData.description,
+            priority: formData.priority,
+            routing_mode: isManualRouting ? 'manual' : 'auto',
+            department_id: isManualRouting ? formData.department : null,
+            user_id: user.id,
+          })
+
+      handleCreateTicketResult(result)
     } catch (err) {
-      setErrors({ submit: err.message || 'Nu s-a putut contacta serverul.' })
+      if (err instanceof ApiError && err?.data?.requires_manual_department) {
+        handleCreateTicketResult({
+          success: false,
+          requires_manual_department: true,
+          message: err.data.message || err.message,
+        })
+      } else {
+        setErrors({ submit: err.message || 'Nu s-a putut contacta serverul.' })
+      }
     } finally {
       setIsSubmitting(false)
     }
@@ -122,6 +183,13 @@ export default function TicketNew() {
 
   const isSubmitDisabled = !formData.title.trim() || !formData.description.trim() || isSubmitting
     || (role === 'admin' && departmentsLoading)
+
+  const showDepartmentField = role === 'admin' || role === 'user'
+  const showDepartmentRetryHint = role === 'user' && requiresManualDepartment
+  const departmentErrorMessage = errors.department || ''
+  const shouldHighlightDepartment = Boolean(departmentErrorMessage) || showDepartmentRetryHint
+  const userNeedsDepartmentsRetry = role === 'user' && requiresManualDepartment && departmentsError
+  const userHasOnlyAutoOption = role === 'user' && !departmentsLoading && departments.length === 0
 
   return (
     <section className="w-full md:mx-auto md:max-w-2xl">
@@ -189,38 +257,11 @@ export default function TicketNew() {
           )}
         </div>
 
-        <div className={role === 'admin' ? 'space-y-4 md:grid md:grid-cols-2 md:gap-4 md:space-y-0' : ''}>
-          <div>
-            <label htmlFor="category" className="mb-1 block text-sm font-medium text-slate-700">
-              Categorie
-            </label>
-            <div className="relative">
-              <select
-                id="category"
-                name="category"
-                value={formData.category}
-                onChange={handleChange}
-                className="w-full min-h-[48px] appearance-none rounded-xl border border-slate-300 bg-white px-4 py-3 text-base outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {CATEGORY_OPTIONS.map((category) => (
-                  <option key={category.value} value={category.value}>
-                    {category.label}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown size={18} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-500" />
-            </div>
-            {role !== 'admin' && (
-              <p className="mt-1 text-xs text-slate-400">
-                Opțional — lasă pe Autodetectare și AI-ul va alege categoria potrivită.
-              </p>
-            )}
-          </div>
-
-          {role === 'admin' && (
+        <div className={role === 'admin' ? 'space-y-4 md:grid md:grid-cols-2 md:gap-4 md:space-y-0' : 'space-y-4'}>
+          {showDepartmentField && (
             <div>
               <label htmlFor="department" className="mb-1 block text-sm font-medium text-slate-700">
-                Departament destinație
+                {role === 'admin' ? 'Departament destinație' : 'Departament'}
               </label>
               <div className="relative">
                 <select
@@ -229,14 +270,21 @@ export default function TicketNew() {
                   value={formData.department}
                   onChange={handleChange}
                   className={`w-full min-h-[48px] appearance-none rounded-xl border bg-white px-4 py-3 text-base outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.department ? 'border-red-400 focus:ring-red-500' : 'border-slate-300'
+                    shouldHighlightDepartment ? 'border-red-400 focus:ring-red-500' : 'border-slate-300'
                   }`}
-                  aria-invalid={Boolean(errors.department)}
-                  aria-describedby={errors.department ? 'department-error' : undefined}
+                  aria-invalid={shouldHighlightDepartment}
+                  aria-describedby={shouldHighlightDepartment ? 'department-error' : undefined}
                 >
-                  <option value="" disabled>
-                    — Alege departamentul —
-                  </option>
+                  {role === 'user' && (
+                    <option value={AUTO_DEPARTMENT_VALUE}>
+                      Autodetectare
+                    </option>
+                  )}
+                  {role === 'admin' && (
+                    <option value="" disabled>
+                      — Alege departamentul —
+                    </option>
+                  )}
                   {departments.map((department) => (
                     <option key={department.id} value={department.id}>
                       {department.name}
@@ -245,41 +293,61 @@ export default function TicketNew() {
                 </select>
                 <ChevronDown size={18} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-500" />
               </div>
+              {role === 'user' && (
+                <p className="mt-1 text-xs text-slate-400">
+                  Lasă pe Autodetectare pentru rutare automată sau alege manual dacă știi deja departamentul potrivit.
+                </p>
+              )}
               {departmentsLoading && <p className="mt-1 text-sm text-slate-500">Așteaptă... se încarcă departamentele</p>}
-              {departmentsError && <p className="mt-1 text-sm text-red-600">Nu s-au putut încărca departamentele</p>}
-              {!departmentsLoading && !departmentsError && departments.length === 0 && (
+              {departmentsError && !userNeedsDepartmentsRetry && (
+                <p className="mt-1 text-sm text-red-600">{departmentsError}</p>
+              )}
+              {!departmentsLoading && !departmentsError && role === 'admin' && departments.length === 0 && (
                 <p className="mt-1 text-sm text-slate-500">Nu există departamente</p>
               )}
-              {errors.department && (
+              {userHasOnlyAutoOption && (
+                <p className="mt-1 text-sm text-slate-500">Poți trimite tichetul cu Autodetectare chiar dacă lista departamentelor nu este disponibilă.</p>
+              )}
+              {showDepartmentRetryHint && (
                 <p id="department-error" className="mt-1 text-sm text-red-600">
-                  {errors.department}
+                  {departmentErrorMessage || 'Selectează manual departamentul pentru a continua.'}
+                </p>
+              )}
+              {showDepartmentRetryHint && !departmentErrorMessage && (
+                <p className="mt-1 text-sm text-amber-700">
+                  Selectează manual departamentul pentru a continua.
+                </p>
+              )}
+              {userNeedsDepartmentsRetry && (
+                <p className="mt-1 text-sm text-red-600">
+                  Lista departamentelor nu a putut fi încărcată. Reîncearcă.
                 </p>
               )}
             </div>
           )}
         </div>
 
-        {role !== 'admin' && (
+        {role !== 'admin' && !requiresManualDepartment && (
           <div
             className={`flex gap-2 rounded-xl border p-3 ${
-              formData.category === 'auto'
+              formData.department === AUTO_DEPARTMENT_VALUE
                 ? 'border-blue-100 bg-blue-50'
                 : 'border-green-100 bg-green-50'
             }`}
           >
-            {formData.category === 'auto' ? (
+            {formData.department === AUTO_DEPARTMENT_VALUE ? (
               <Info size={16} className="mt-0.5 flex-shrink-0 text-blue-500" />
             ) : (
               <CheckCircle2 size={16} className="mt-0.5 flex-shrink-0 text-green-500" />
             )}
             <p
               className={`text-xs ${
-                formData.category === 'auto' ? 'text-blue-700' : 'text-green-700'
+                formData.department === AUTO_DEPARTMENT_VALUE ? 'text-blue-700' : 'text-green-700'
               }`}
             >
-              {formData.category === 'auto'
-                ? 'Categoria și departamentul vor fi determinate automat pe baza descrierii tale.'
-                : 'Tichetul va fi direcționat pe baza categoriei alese.'}
+              {formData.department === AUTO_DEPARTMENT_VALUE
+                ? 'Departamentul va fi determinat automat pe baza descrierii tale.'
+                : 'Tichetul va fi trimis direct către departamentul selectat.'}
             </p>
           </div>
         )}
@@ -304,8 +372,18 @@ export default function TicketNew() {
               )
             })}
           </div>
+          {errors.priority && (
+            <p className="mt-1 text-sm text-red-600">
+              {errors.priority}
+            </p>
+          )}
         </div>
 
+        {successMessage && (
+          <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+            {successMessage}
+          </p>
+        )}
 
         {errors.submit && (
           <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
