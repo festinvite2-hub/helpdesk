@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { ChevronLeft, ChevronDown, Loader2, SendHorizontal } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { ChevronLeft, ChevronDown, Loader2 } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
-import ChatBubble from '../components/tickets/ChatBubble'
+import TicketThread from '../components/tickets/TicketThread'
 import useMediaQuery from '../hooks/useMediaQuery'
 import { useAuth } from '../context/AuthContext'
-import { addMessage, getTicketDetail } from '../api/tickets'
+import { getTicketDetail } from '../api/tickets'
 
 const statusMap = {
   open: { label: 'Deschis', className: 'bg-sky-100 text-sky-700', dot: 'bg-sky-500' },
@@ -43,19 +43,6 @@ function normalizePerson(value, fallbackRole = 'user') {
   }
 }
 
-function normalizeMessage(message, role) {
-  if (!message || typeof message !== 'object') return null
-
-  return {
-    ...message,
-    id: message.id ?? `m-${Date.now()}`,
-    sender_type: message.sender_type ?? role ?? 'user',
-    sender_name: message.sender_name ?? message.sender?.full_name ?? message.sender?.name ?? 'Necunoscut',
-    content: message.content ?? '',
-    created_at: message.created_at ?? new Date().toISOString(),
-  }
-}
-
 function normalizeHistoryEntry(entry) {
   if (!entry || typeof entry !== 'object') return null
 
@@ -74,7 +61,6 @@ function normalizeHistoryEntry(entry) {
 
 function normalizeTicketDetailResponse(response, fallbackId) {
   const ticketSource = response?.ticket ?? response?.data?.ticket ?? response ?? {}
-  const messagesSource = response?.messages ?? response?.data?.messages ?? []
   const historySource =
     response?.status_history ??
     response?.history ??
@@ -118,9 +104,6 @@ function normalizeTicketDetailResponse(response, fallbackId) {
       updated_at: ticketSource.updated_at ?? ticketSource.created_at ?? new Date().toISOString(),
       routed_by: ticketSource.routed_by ?? 'manual',
     },
-    messages: Array.isArray(messagesSource)
-      ? messagesSource.map((message) => normalizeMessage(message, 'user')).filter(Boolean)
-      : [],
     statusHistory: Array.isArray(historySource)
       ? historySource.map(normalizeHistoryEntry).filter(Boolean)
       : [],
@@ -130,29 +113,16 @@ function normalizeTicketDetailResponse(response, fallbackId) {
 export default function TicketDetail() {
   const navigate = useNavigate()
   const { id: ticketId } = useParams()
-  const { role, user } = useAuth()
+  const { role } = useAuth()
   const isDesktop = useMediaQuery('(min-width: 768px)')
 
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
-  const [replyText, setReplyText] = useState('')
   const [ticket, setTicket] = useState(null)
-  const [messages, setMessages] = useState([])
   const [statusHistory, setStatusHistory] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [sending, setSending] = useState(false)
-  const [replyError, setReplyError] = useState('')
-
-  const bottomRef = useRef(null)
-  const textareaRef = useRef(null)
-
   const canManage = role === 'dept_manager' || role === 'responsible' || role === 'responsabil' || role === 'admin'
-
-  const sortedMessages = useMemo(
-    () => [...messages].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()),
-    [messages]
-  )
 
   const status = statusMap[ticket?.status] ?? statusMap.open
   const priority = priorityMap[ticket?.priority] ?? priorityMap.medium
@@ -177,17 +147,6 @@ export default function TicketDetail() {
     })
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [sortedMessages])
-
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto'
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`
-    }
-  }, [replyText])
-
-  useEffect(() => {
     async function loadTicket() {
       if (!ticketId) {
         setError('Lipsește identificatorul tichetului.')
@@ -203,7 +162,6 @@ export default function TicketDetail() {
         const normalized = normalizeTicketDetailResponse(response, ticketId)
 
         setTicket(normalized.ticket)
-        setMessages(normalized.messages)
         setStatusHistory(normalized.statusHistory)
       } catch (loadError) {
         setError(loadError?.message || 'Nu s-au putut încărca detaliile tichetului.')
@@ -215,33 +173,6 @@ export default function TicketDetail() {
     loadTicket()
   }, [ticketId])
 
-  const handleSend = async () => {
-    if (!replyText.trim() || !ticketId || sending) return
-
-    setSending(true)
-    setReplyError('')
-
-    try {
-      const response = await addMessage(ticketId, replyText.trim())
-      const newMessage = normalizeMessage(response, role === 'admin' ? 'admin' : canManage ? 'dept_manager' : 'user')
-
-      setMessages((prev) => [
-        ...prev,
-        newMessage ?? {
-          id: `m${Date.now()}`,
-          sender_type: role === 'admin' ? 'admin' : canManage ? 'dept_manager' : 'user',
-          sender_name: user?.full_name ?? 'Utilizator',
-          content: replyText.trim(),
-          created_at: new Date().toISOString(),
-        },
-      ])
-      setReplyText('')
-    } catch (sendError) {
-      setReplyError(sendError?.message || 'Nu am putut trimite mesajul.')
-    } finally {
-      setSending(false)
-    }
-  }
 
   const detailsVisible = isDesktop || detailsOpen
 
@@ -342,43 +273,18 @@ export default function TicketDetail() {
           )}
         </section>
 
-        <section className="md:col-span-2 md:flex md:flex-col">
-          <div className="flex flex-col gap-3 px-4 py-4 pb-36 md:flex-1 md:overflow-y-auto md:pb-4">
-            {sortedMessages.map((message) => (
-              <ChatBubble key={message.id} message={message} relativeTime={formatRelativeTime(message.created_at)} />
-            ))}
+        <section className="space-y-4 px-4 py-4 md:col-span-2 md:overflow-y-auto md:px-0">
+          <TicketThread ticketId={ticketId} />
 
-            {!isDesktop ? (
-              <StatusHistory
-                items={statusHistory}
-                statusMap={statusMap}
-                formatRelativeTime={formatRelativeTime}
-                open={historyOpen}
-                onToggle={() => setHistoryOpen((prev) => !prev)}
-              />
-            ) : null}
-            <div ref={bottomRef} />
-          </div>
-
-          <div className="fixed bottom-20 left-0 right-0 z-20 border-t border-slate-200 bg-white px-4 py-2 md:static md:mt-2 md:rounded-xl md:border-t md:shadow-sm">
-            <div className="flex items-end gap-2">
-              <textarea
-                ref={textareaRef}
-                value={replyText}
-                onChange={(event) => setReplyText(event.target.value)}
-                placeholder="Scrie un răspuns..."
-                className="max-h-[120px] min-h-[48px] flex-1 resize-none rounded-xl border border-slate-300 px-3 py-2.5 text-base outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <button
-                onClick={handleSend}
-                disabled={!replyText.trim() || sending}
-                className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white transition-all active:scale-95 active:bg-blue-700 disabled:bg-slate-300"
-              >
-                {sending ? <Loader2 size={18} className="animate-spin" /> : <SendHorizontal size={18} />}
-              </button>
-            </div>
-            {replyError ? <p className="mt-2 text-sm text-red-600">{replyError}</p> : null}
-          </div>
+          {!isDesktop ? (
+            <StatusHistory
+              items={statusHistory}
+              statusMap={statusMap}
+              formatRelativeTime={formatRelativeTime}
+              open={historyOpen}
+              onToggle={() => setHistoryOpen((prev) => !prev)}
+            />
+          ) : null}
         </section>
       </main>
     </div>
