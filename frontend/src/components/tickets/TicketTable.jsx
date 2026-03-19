@@ -53,7 +53,7 @@ export default function TicketTable({ tickets = [], onStatusChange, updatingTick
               <tr
                 key={ticket.id}
                 className="cursor-pointer border-t border-slate-100 hover:bg-slate-50"
-                onClick={() => navigate(`/tickets/${ticket.id}`)}
+                onClick={() => navigate(`/tickets/${ticket.id}`, { state: { ticket } })}
               >
                 <td className="px-4 py-3 font-mono text-xs text-slate-500">{ticket.ticket_number}</td>
                 <td className="px-4 py-3 font-medium text-slate-900">{ticket.title}</td>
