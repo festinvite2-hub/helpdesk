@@ -49,23 +49,35 @@ function getTextValue(...values) {
     if (typeof value === 'string' && value.trim()) {
       return value.trim()
     }
+
+    if (typeof value === 'number') {
+      return String(value)
+    }
   }
 
   return ''
 }
 
-function getPersonLabel(value) {
+function getRawIdentifier(value) {
   if (!value) return ''
 
   if (typeof value === 'string') {
     return value.trim()
   }
 
+  if (typeof value === 'number') {
+    return String(value)
+  }
+
   if (typeof value === 'object') {
-    return getTextValue(value.name, value.full_name, value.email, value.username)
+    return getTextValue(value.id, value.uuid, value.user_id, value.department_id, value.category_id)
   }
 
   return ''
+}
+
+function getReadableOrRawValue(readableValues, rawValues, fallback) {
+  return getTextValue(...readableValues) || getRawIdentifier(rawValues[0]) || getTextValue(...rawValues.slice(1)) || fallback
 }
 
 function normalizeTicketDetails(rawTicket, fallbackId) {
@@ -77,23 +89,41 @@ function normalizeTicketDetails(rawTicket, fallbackId) {
       description: '',
       status: '',
       priority: '',
-      department: '',
+      department: 'Nesetat',
       departmentColor: '',
-      assignedTo: '',
-      createdBy: '',
+      assignedTo: 'Neasignat',
+      createdBy: 'Nedisponibil',
       createdAt: '',
       updatedAt: '',
-      category: '',
+      category: 'Nedisponibil',
       routedBy: '',
       summary: '',
     }
   }
 
-  const createdBy = getPersonLabel(rawTicket.created_by)
-    || getTextValue(rawTicket.created_by_name, rawTicket.createdByName, rawTicket.created_by_email, rawTicket.createdByEmail)
+  const createdBy = getReadableOrRawValue(
+    [rawTicket.created_by_name, rawTicket.createdByName],
+    [rawTicket.created_by, rawTicket.created_by_email, rawTicket.createdByEmail],
+    'Nedisponibil'
+  )
 
-  const assignedTo = getPersonLabel(rawTicket.assigned_to)
-    || getTextValue(rawTicket.assigned_to_name, rawTicket.assignedToName, rawTicket.assigned_to_email, rawTicket.assignedToEmail)
+  const assignedTo = getReadableOrRawValue(
+    [rawTicket.assigned_to_name, rawTicket.assignedToName],
+    [rawTicket.assigned_to, rawTicket.assigned_to_email, rawTicket.assignedToEmail],
+    'Neasignat'
+  )
+
+  const department = getReadableOrRawValue(
+    [rawTicket.department_name, rawTicket.departmentName, rawTicket.department],
+    [rawTicket.department_id, rawTicket.departmentId],
+    'Nesetat'
+  )
+
+  const category = getReadableOrRawValue(
+    [rawTicket.category_name, rawTicket.categoryName, rawTicket.category, rawTicket.topic],
+    [rawTicket.category_id, rawTicket.categoryId],
+    'Nedisponibil'
+  )
 
   return {
     id: String(rawTicket.id ?? rawTicket.ticket_id ?? fallbackId ?? ''),
@@ -102,13 +132,13 @@ function normalizeTicketDetails(rawTicket, fallbackId) {
     description: getTextValue(rawTicket.description, rawTicket.details, rawTicket.summary),
     status: getTextValue(rawTicket.status),
     priority: getTextValue(rawTicket.priority),
-    department: getTextValue(rawTicket.department, rawTicket.department_name, rawTicket.departmentName),
+    department,
     departmentColor: getTextValue(rawTicket.department_color, rawTicket.departmentColor),
     assignedTo,
     createdBy,
     createdAt: rawTicket.created_at ?? rawTicket.createdAt ?? '',
     updatedAt: rawTicket.updated_at ?? rawTicket.updatedAt ?? '',
-    category: getTextValue(rawTicket.category, rawTicket.topic),
+    category,
     routedBy: getTextValue(rawTicket.routed_by, rawTicket.routing_mode),
     summary: getTextValue(rawTicket.summary),
   }
@@ -176,7 +206,7 @@ export default function TicketDetail() {
   const ticket = normalizeTicketDetails(location.state?.ticket, id)
   const hasTicketSnapshot = Boolean(location.state?.ticket && typeof location.state.ticket === 'object')
   const hasDescription = Boolean(ticket.description)
-  const hasSummaryData = Boolean(ticket.category || ticket.routedBy || ticket.ticketNumber)
+  const hasSummaryData = Boolean(ticket.category !== 'Nedisponibil' || ticket.routedBy || ticket.ticketNumber)
   const title = ticket.title || 'Ticket'
   const titleSubtitle = ticket.title ? null : 'Titlu indisponibil momentan'
   const detailAvailabilityNote = hasTicketSnapshot
@@ -215,7 +245,7 @@ export default function TicketDetail() {
                 <div className="flex flex-wrap items-center gap-2.5 text-sm text-slate-600">
                   <span className="rounded-full bg-slate-100 px-3 py-1.5 font-medium text-slate-700">Număr: {ticket.ticketNumber || 'Nedisponibil'}</span>
                   <Badge className="bg-blue-100 text-blue-800 ring-blue-200">
-                    {ticket.department || 'Departament nedisponibil'}
+                    {ticket.department}
                   </Badge>
                 </div>
               </div>
@@ -251,7 +281,7 @@ export default function TicketDetail() {
                     Creat de
                   </div>
                   <p className={`mt-3 text-base font-semibold ${ticket.createdBy ? 'text-slate-900' : 'text-slate-500'}`}>
-                    {ticket.createdBy || 'Nedisponibil'}
+                    {ticket.createdBy}
                   </p>
                 </div>
               </div>
@@ -297,7 +327,7 @@ export default function TicketDetail() {
                   <Badge className={statusBadgeClass}>{normalizeBadgeLabel(ticket.status, 'Status nedisponibil')}</Badge>
                   <Badge className={priorityBadgeClass}>{normalizeBadgeLabel(ticket.priority, 'Prioritate nedisponibilă')}</Badge>
                   <Badge className="bg-blue-100 text-blue-800 ring-blue-200">
-                    {ticket.department || 'Departament nedisponibil'}
+                    {ticket.department}
                   </Badge>
                 </div>
               </div>
@@ -307,9 +337,9 @@ export default function TicketDetail() {
                 <dl className="space-y-4">
                   <MetadataItem label="Status" value={normalizeBadgeLabel(ticket.status, 'Nedisponibil')} muted={!ticket.status} />
                   <MetadataItem label="Prioritate" value={normalizeBadgeLabel(ticket.priority, 'Nedisponibil')} muted={!ticket.priority} />
-                  <MetadataItem label="Departament" value={ticket.department || 'Nedisponibil'} muted={!ticket.department} />
-                  <MetadataItem label="Asignat către" value={ticket.assignedTo || 'Nedisponibil'} muted={!ticket.assignedTo} />
-                  <MetadataItem label="Creat de" value={ticket.createdBy || 'Nedisponibil'} muted={!ticket.createdBy} />
+                  <MetadataItem label="Departament" value={ticket.department} muted={ticket.department === 'Nesetat'} />
+                  <MetadataItem label="Asignat către" value={ticket.assignedTo} muted={ticket.assignedTo === 'Neasignat'} />
+                  <MetadataItem label="Creat de" value={ticket.createdBy} muted={ticket.createdBy === 'Nedisponibil'} />
                   <MetadataItem label="Ultima actualizare" value={formatDisplayDate(ticket.updatedAt)} muted={!ticket.updatedAt} />
                 </dl>
               </div>
@@ -330,7 +360,7 @@ export default function TicketDetail() {
                     <p className="text-sm font-semibold text-slate-700">Detalii utile pentru contextul curent</p>
                     <div className="space-y-3">
                       <MetadataItem label="Număr ticket" value={ticket.ticketNumber || 'Nedisponibil'} muted={!ticket.ticketNumber} />
-                      <MetadataItem label="Categorie" value={ticket.category || 'Nedisponibil'} muted={!ticket.category} />
+                      <MetadataItem label="Categorie" value={ticket.category} muted={ticket.category === 'Nedisponibil'} />
                       <MetadataItem label="Rutare" value={ticket.routedBy || 'Nedisponibil'} muted={!ticket.routedBy} />
                     </div>
                   </div>
